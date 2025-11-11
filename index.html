@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ankurah - Real-time State Management Framework</title>
+    <meta name="description" content="A distributed state-management framework that enables real-time data synchronization across multiple nodes with built-in observability.">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="images/logo-128.png">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo-section">
+                    <img src="images/logo-128.png" alt="Ankurah Logo" class="nav-logo">
+                    <span class="nav-title">Ankurah</span>
+                </div>
+                <div class="nav-links">
+                    <a href="book/what-is-ankurah.html">Documentation</a>
+                    <a href="book/getting-started.html">Getting Started</a>
+                    <a href="https://github.com/ankurah/ankurah" target="_blank">GitHub</a>
+                    <a href="https://discord.gg/XMUUxsbT5S" target="_blank" class="discord-link">Discord</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <img src="images/logo-128.png" alt="Ankurah Logo" class="hero-logo">
+                <h1>Ankurah</h1>
+                <p class="tagline">The root of all cosmic projections of state</p>
+                <p class="subtitle">A distributed state-management framework that enables real-time data synchronization across multiple nodes with built-in observability.</p>
+                <div class="cta-buttons">
+                    <a href="book/getting-started.html" class="btn btn-primary">Get Started</a>
+                    <a href="book/what-is-ankurah.html" class="btn btn-secondary">Learn More</a>
+                </div>
+                <div class="status-notice">
+                    <span class="badge">Early Development</span>
+                    <span>Not yet ready for production use</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="container">
+            <h2>Key Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Schema-First Design</h3>
+                    <p>Define data models using Rust structs with an ActiveRecord-style interface - View/Mutable</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔔</div>
+                    <h3>Content-filtered Pub/Sub</h3>
+                    <p>Subscribe to changes on a collection using a SQL-like query language</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👁️</div>
+                    <h3>Real-Time Observability</h3>
+                    <p>Signal-based pattern for tracking entity changes with reactive updates</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3>Distributed Architecture</h3>
+                    <p>Multi-node synchronization with event sourcing and ULID-based operations</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💾</div>
+                    <h3>Flexible Storage</h3>
+                    <p>Support for multiple storage backends: Sled, Postgres, and TiKV (planned)</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚛️</div>
+                    <h3>Isomorphic Code</h3>
+                    <p>Server and Web applications use the same code - first-class React and Leptos support</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="code-example">
+        <div class="container">
+            <h2>Quick Example</h2>
+            <pre><code>// Subscribe to changes on the client
+let subscription = client.subscribe::&lt;_,_,AlbumView&gt;(
+    "name = 'Origin of Symmetry'", 
+    |changes| {
+        println!("Received changes: {}", changes);
+    }
+).await?;
+
+// Create a new album on the server
+let trx = server.begin();
+let album = trx.create(&Album {
+    name: "Origin of Symmetry".into(),
+    year: "2001".into(),
+}).await?;
+trx.commit().await?;</code></pre>
+            <a href="book/examples.html" class="btn btn-secondary">More Examples →</a>
+        </div>
+    </section>
+
+    <section class="getting-started-preview">
+        <div class="container">
+            <h2>Ready to Start?</h2>
+            <p>Get up and running quickly with our React + Sled template</p>
+            <div class="code-snippet">
+                <code>cargo generate https://github.com/ankurah/react-sled-template</code>
+            </div>
+            <a href="book/getting-started.html" class="btn btn-primary">View Full Guide →</a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <img src="images/logo-128.png" alt="Ankurah Logo" class="footer-logo">
+                    <p>The root of all cosmic projections of state</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <a href="book/what-is-ankurah.html">What is Ankurah?</a>
+                    <a href="book/getting-started.html">Getting Started</a>
+                    <a href="book/architecture.html">Architecture</a>
+                    <a href="book/glossary.html">Glossary</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <a href="https://github.com/ankurah/ankurah" target="_blank">GitHub</a>
+                    <a href="https://discord.gg/XMUUxsbT5S" target="_blank">Discord</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <a href="https://github.com/ankurah/ankurah/blob/main/LICENSE_MIT" target="_blank">MIT License</a>
+                    <a href="https://github.com/ankurah/ankurah/blob/main/LICENSE_APACHE" target="_blank">Apache License</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Ankurah Project. Licensed under MIT or Apache-2.0.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
+
