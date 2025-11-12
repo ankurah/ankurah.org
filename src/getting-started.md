@@ -22,23 +22,14 @@ After generating your project:
 
 ```bash
 cd your-project-name
-
-# Start the server (in one terminal)
-cargo run -p server
-
-# In another terminal, build the WASM bindings
-cd wasm-bindings
-wasm-pack build --target web --debug
-
-# In another terminal, run the React app
-cd react-app
-bun install
-bun dev
+./dev.sh
 ```
 
-Then open your browser to the URL shown (usually `http://localhost:5173`).
+This starts watchers for the Rust server, wasm-bindings, and React app. Open your browser to `http://localhost:5173`. Press Ctrl+C to stop and all watchers will exit cleanly.
 
 > **Tip**: More templates will be added soon for different use cases!
+>
+> **Need help?** Join the [Ankurah Discord](https://discord.gg/XMUUxsbT5S)!
 
 ---
 
