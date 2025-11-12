@@ -55,6 +55,7 @@ Output will be in the `book/` directory.
 The site is automatically deployed to GitHub Pages when changes are pushed to the `main` branch.
 
 The deployment workflow:
+
 1. Builds the mdBook documentation
 2. Copies the landing page and assets
 3. Deploys to GitHub Pages
@@ -62,11 +63,13 @@ The deployment workflow:
 ## Content Organization
 
 ### Landing Page
+
 - `index.html` - Main landing page HTML
 - `styles.css` - Custom CSS for landing page
 - `images/logo-128.png` - Ankurah logo
 
 ### Documentation (mdBook)
+
 - `src/SUMMARY.md` - Navigation structure
 - `src/what-is-ankurah.md` - Overview and introduction
 - `src/getting-started.md` - Setup and templates
@@ -80,11 +83,13 @@ The deployment workflow:
 ### Adding a New Page
 
 1. Create a new markdown file in `src/`:
+
    ```bash
    touch src/new-page.md
    ```
 
 2. Add it to `src/SUMMARY.md`:
+
    ```markdown
    [New Page Title](new-page.md)
    ```
@@ -107,6 +112,7 @@ The deployment workflow:
 ## Configuration
 
 Edit `book.toml` to change:
+
 - Site title and description
 - Theme settings
 - GitHub repository links
@@ -134,4 +140,3 @@ The documentation content in this repository is licensed under [CC BY 4.0](https
 - [Ankurah Main Repository](https://github.com/ankurah/ankurah)
 - [Discord Community](https://discord.gg/XMUUxsbT5S)
 - [Live Website](https://ankurah.org)
-

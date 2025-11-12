@@ -13,7 +13,7 @@ use ankurah_connector_local_process::LocalProcessConnection;
 
 // Create server node with durable storage
 let server = Node::new_durable(
-    Arc::new(SledStorageEngine::new_test()?), 
+    Arc::new(SledStorageEngine::new_test()?),
     PermissiveAgent::new()
 );
 
@@ -25,7 +25,7 @@ let server = server.context(context_data)?;
 
 // Create client node
 let client = Node::new(
-    Arc::new(SledStorageEngine::new_test()?), 
+    Arc::new(SledStorageEngine::new_test()?),
     PermissiveAgent::new()
 );
 
@@ -38,7 +38,7 @@ let client = client.context(context_data)?;
 
 // Subscribe to changes on the client
 let subscription = client.subscribe::<_,_,AlbumView>(
-    "name = 'Origin of Symmetry'", 
+    "name = 'Origin of Symmetry'",
     |changes| {
         println!("Received changes: {}", changes);
     }
@@ -158,15 +158,15 @@ let sub = context.subscribe::<_,_,BlogPostView>(
 Ankurah provides React hooks for reactive UI updates:
 
 ```typescript
-import { useQuery, useEntity } from 'ankurah-react';
+import { useQuery, useEntity } from "ankurah-react";
 
 function BlogPostList() {
   // Subscribe to all published posts
-  const posts = useQuery<BlogPost>('BlogPost', 'published = true');
-  
+  const posts = useQuery<BlogPost>("BlogPost", "published = true");
+
   return (
     <div>
-      {posts.map(post => (
+      {posts.map((post) => (
         <BlogPostCard key={post.id} postId={post.id} />
       ))}
     </div>
@@ -176,9 +176,9 @@ function BlogPostList() {
 function BlogPostCard({ postId }) {
   // Subscribe to a specific entity
   const post = useEntity<BlogPost>(postId);
-  
+
   if (!post) return <div>Loading...</div>;
-  
+
   return (
     <div>
       <h2>{post.title}</h2>
@@ -228,9 +228,9 @@ async fn create_post_with_validation(
     if title.is_empty() {
         return Err(AnkurahError::validation("Title cannot be empty"));
     }
-    
+
     let trx = context.begin();
-    
+
     // Create the post
     let post = trx.create(&BlogPost {
         title: title.into(),
@@ -239,10 +239,10 @@ async fn create_post_with_validation(
         published: false,
         tags: vec![],
     }).await?;
-    
+
     // Commit (or automatically rollback on error)
     trx.commit().await?;
-    
+
     Ok(post)
 }
 ```
@@ -297,4 +297,3 @@ let node = Node::new(
 - Review the [Glossary](glossary.md) to understand key terms
 - Study the [Architecture](architecture.md) to see how it all fits together
 - Join the [Discord](https://discord.gg/XMUUxsbT5S) to discuss your use case!
-

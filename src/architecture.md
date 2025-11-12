@@ -15,6 +15,7 @@ The following interactive diagram shows the key components and data flow in an A
 ### Node
 
 A **Node** is the fundamental unit in Ankurah. Each node can:
+
 - Store data using a pluggable storage backend
 - Subscribe to changes from other nodes
 - Publish changes to subscribed nodes
@@ -52,6 +53,7 @@ client.subscribe::<_,_,AlbumView>(
 ```
 
 The subscription system uses:
+
 - **Content filtering**: Only matching entities trigger callbacks
 - **Real-time updates**: Changes propagate immediately
 - **Efficient indexing**: Queries are optimized using available indexes
@@ -59,6 +61,7 @@ The subscription system uses:
 ### Reactive Runtime
 
 Ankurah includes a reactive runtime (Reactor) that:
+
 - Tracks dependencies between entities
 - Propagates changes through the dependency graph
 - Enables derived/computed values
@@ -75,6 +78,7 @@ Ankurah includes a reactive runtime (Reactor) that:
 ### Peer-to-Peer (Planned)
 
 Future versions will support:
+
 - Direct peer-to-peer connections
 - Mesh networking
 - Cryptographic identities
@@ -102,4 +106,3 @@ Ankurah uses **eventual consistency** with strong guarantees:
 - See the [Design Goals](design-goals.md) for the philosophy behind these choices
 - Check out [Examples](examples.md) for practical code demonstrating these concepts
 - Join the [Discord](https://discord.gg/XMUUxsbT5S) to discuss architecture and implementation details
-

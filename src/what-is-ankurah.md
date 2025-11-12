@@ -38,7 +38,7 @@ Ankurah follows an event-sourced architecture where:
 ```rust
 // Subscribe to changes on the client
 let subscription = client.subscribe::<_,_,AlbumView>(
-    "name = 'Origin of Symmetry'", 
+    "name = 'Origin of Symmetry'",
     |changes| {
         println!("Received changes: {}", changes);
     }
@@ -63,4 +63,3 @@ Join the conversation and contribute:
 ## License
 
 Ankurah is dual-licensed under MIT or Apache-2.0.
-

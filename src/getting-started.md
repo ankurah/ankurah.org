@@ -11,6 +11,7 @@ cargo generate https://github.com/ankurah/react-sled-template
 ```
 
 This will create a new project with:
+
 - A Rust server using the Sled storage backend
 - A React frontend with TypeScript
 - WASM bindings pre-configured
@@ -48,14 +49,17 @@ If you want to set up Ankurah from scratch, follow these steps:
 ### Prerequisites
 
 - **Install Rust:**
+
   - [rustup.rs](https://rustup.rs/)
 
 - **Install Cargo Watch** (useful for development workflow):
+
   ```bash
   cargo install cargo-watch
   ```
 
 - **Install wasm-pack:**
+
   - [wasm-pack installer](https://rustwasm.github.io/wasm-pack/installer/)
 
 - **Install Bun** (npm/node might work, but Bun is faster):
@@ -138,4 +142,3 @@ In the example setup:
 - Learn about the [Architecture](architecture.md) to understand how Ankurah works
 - Read the [Glossary](glossary.md) to understand key terminology
 - Join the [Discord](https://discord.gg/XMUUxsbT5S) to ask questions and share your projects!
-

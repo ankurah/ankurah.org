@@ -6,4 +6,3 @@
 [Glossary](glossary.md)
 [Design Goals](design-goals.md)
 [Examples](examples.md)
-

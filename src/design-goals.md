@@ -145,9 +145,9 @@ We welcome contributions! Join the discussion:
 - [Discord Server](https://discord.gg/XMUUxsbT5S)
 
 Help shape the future of Ankurah by:
+
 - Reporting bugs and suggesting features
 - Improving documentation
 - Contributing code
 - Building example applications
 - Sharing your use cases
-

@@ -17,8 +17,8 @@
                     <span class="nav-title">Ankurah</span>
                 </div>
                 <div class="nav-links">
-                    <a href="book/what-is-ankurah.html">Documentation</a>
-                    <a href="book/getting-started.html">Getting Started</a>
+                    <a href="what-is-ankurah.html">Documentation</a>
+                    <a href="getting-started.html">Getting Started</a>
                     <a href="https://github.com/ankurah/ankurah" target="_blank">GitHub</a>
                     <a href="https://discord.gg/XMUUxsbT5S" target="_blank" class="discord-link">Discord</a>
                 </div>
@@ -29,18 +29,24 @@
     <section class="hero">
         <div class="container">
             <div class="hero-content">
-                <img src="images/logo-128.png" alt="Ankurah Logo" class="hero-logo">
-                <h1>Ankurah</h1>
+                <div class="hero-title">
+                    <img src="images/logo-transparent-256.png" alt="Ankurah Logo" class="hero-logo">
+                    <h1>Ankurah</h1>
+                </div>
                 <p class="tagline">The root of all cosmic projections of state</p>
                 <p class="subtitle">A distributed state-management framework that enables real-time data synchronization across multiple nodes with built-in observability.</p>
                 <div class="cta-buttons">
-                    <a href="book/getting-started.html" class="btn btn-primary">Get Started</a>
-                    <a href="book/what-is-ankurah.html" class="btn btn-secondary">Learn More</a>
+                    <a href="getting-started.html" class="btn btn-primary">Get Started</a>
+                    <a href="what-is-ankurah.html" class="btn btn-secondary">Learn More</a>
                 </div>
                 <div class="status-notice">
                     <span class="badge">Early Development</span>
                     <span>Not yet ready for production use</span>
                 </div>
+            </div>
+            <div class="scroll-indicator">
+                <div class="scroll-arrow">↓</div>
+                <span>Explore</span>
             </div>
         </div>
     </section>
@@ -50,34 +56,49 @@
             <h2>Key Features</h2>
             <div class="feature-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3>Schema-First Design</h3>
-                    <p>Define data models using Rust structs with an ActiveRecord-style interface - View/Mutable</p>
+                    <h3><span class="feature-icon-inline">1️⃣</span>Schema-First Design</h3>
+                    <pre class="feature-code"><code>#[derive(Model)]
+struct Album { 
+  name: String, 
+  year: u16 
+}</code></pre>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🔔</div>
-                    <h3>Content-filtered Pub/Sub</h3>
-                    <p>Subscribe to changes on a collection using a SQL-like query language</p>
+                    <h3><span class="feature-icon-inline">🔍</span>Reactive Queries</h3>
+                    <div class="code-label">Rust</div>
+                    <pre class="feature-code"><code>let q&thinsp;=&thinsp;ctx.query::&lt;AlbumView&gt;("year > 1985");</code></pre>
+                    <div class="code-label">TypeScript</div>
+                    <pre class="feature-code"><code class="language-typescript">function MyCmp = signalObserver(() =&gt;{
+  const q = useMemo(() =&gt;
+    Album.query("year > 1985"), []);
+  return (
+    &lt;div&gt;
+    {q.items} /*tracked by ReactObserver*/
+    &lt;/div&gt;
+  ) 
+}</code></pre>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">👁️</div>
-                    <h3>Real-Time Observability</h3>
-                    <p>Signal-based pattern for tracking entity changes with reactive updates</p>
+                    <h3><span class="feature-icon-inline">🔌</span>Local-First</h3>
+                    <p>Queries work with local storage when not connected</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🌐</div>
-                    <h3>Distributed Architecture</h3>
-                    <p>Multi-node synchronization with event sourcing and ULID-based operations</p>
+                    <h3><span class="feature-icon-inline">🗄️</span>Flexible Storage</h3>
+                    <p>Sled • Postgres • IndexedDB • TiKV (planned)</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">💾</div>
-                    <h3>Flexible Storage</h3>
-                    <p>Support for multiple storage backends: Sled, Postgres, and TiKV (planned)</p>
+                    <h3><span class="feature-icon-inline">⚡</span>Generated Interfaces</h3>
+                    <pre class="feature-code"><code class="language-typescript">export class Album {
+  static query(
+    context: Context,
+    selection: string,
+    ...args: any
+  ): AlbumLiveQuery;
+}</code></pre>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">⚛️</div>
-                    <h3>Isomorphic Code</h3>
-                    <p>Server and Web applications use the same code - first-class React and Leptos support</p>
+                    <h3><span class="feature-icon-inline">🔋</span>Batteries Included</h3>
+                    <p>WebSocket • HTTP/REST • Authentication • Query routing</p>
                 </div>
             </div>
         </div>
@@ -86,22 +107,41 @@
     <section class="code-example">
         <div class="container">
             <h2>Quick Example</h2>
-            <pre><code>// Subscribe to changes on the client
-let subscription = client.subscribe::&lt;_,_,AlbumView&gt;(
-    "name = 'Origin of Symmetry'", 
-    |changes| {
-        println!("Received changes: {}", changes);
-    }
-).await?;
+            
+            <div class="code-label">Server</div>
+            <pre><code>let storage = SledStorageEngine::new("./data")?;
+let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
 
-// Create a new album on the server
-let trx = server.begin();
-let album = trx.create(&Album {
-    name: "Origin of Symmetry".into(),
-    year: "2001".into(),
+let ctx = node.context(ankurah::policy::DEFAULT_CONTEXT)?;
+let trx = ctx.begin();
+trx.create(&Album { 
+    name: "Parade".into(),
+    year: 1986 
 }).await?;
 trx.commit().await?;</code></pre>
-            <a href="book/examples.html" class="btn btn-secondary">More Examples →</a>
+
+            <div class="code-label">Client</div>
+            <pre><code>let storage = IndexedDBStorageEngine::open("myapp").await?;
+let node = Node::new(Arc::new(storage), PermissiveAgent::new());
+let client = WebsocketClient::new(node.clone(), "ws://localhost:9797")?;
+
+let ctx = node.context(ankurah::policy::DEFAULT_CONTEXT)?;
+let albums = ctx.query::&lt;AlbumView&gt;("year > 1985").await?;</code></pre>
+
+            <div class="code-label">React Component</div>
+            <pre><code class="language-typescript">export const AlbumList = signalObserver(() =&gt; {
+  const albums = useMemo(() =&gt; Album.query(ctx(), "year > 1985"), []);
+  
+  return (
+    &lt;ul&gt;
+      {albums.items.map(album =&gt; (
+        &lt;li key={album.id}&gt;{album.name} ({album.year})&lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  ); // albums.items is tracked by signalObserver
+});</code></pre>
+
+            <a href="examples.html" class="btn btn-secondary">More Examples →</a>
         </div>
     </section>
 
@@ -112,7 +152,7 @@ trx.commit().await?;</code></pre>
             <div class="code-snippet">
                 <code>cargo generate https://github.com/ankurah/react-sled-template</code>
             </div>
-            <a href="book/getting-started.html" class="btn btn-primary">View Full Guide →</a>
+            <a href="getting-started.html" class="btn btn-primary">View Full Guide →</a>
         </div>
     </section>
 
@@ -125,10 +165,10 @@ trx.commit().await?;</code></pre>
                 </div>
                 <div class="footer-section">
                     <h4>Documentation</h4>
-                    <a href="book/what-is-ankurah.html">What is Ankurah?</a>
-                    <a href="book/getting-started.html">Getting Started</a>
-                    <a href="book/architecture.html">Architecture</a>
-                    <a href="book/glossary.html">Glossary</a>
+                    <a href="what-is-ankurah.html">What is Ankurah?</a>
+                    <a href="getting-started.html">Getting Started</a>
+                    <a href="architecture.html">Architecture</a>
+                    <a href="glossary.html">Glossary</a>
                 </div>
                 <div class="footer-section">
                     <h4>Community</h4>

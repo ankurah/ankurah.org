@@ -46,6 +46,7 @@ album.name.set("New Album Name");
 ### Event
 
 A single event that may or may not be applied to an entity. Events are immutable operations that form the basis of Ankurah's event sourcing. Each event has:
+
 - A unique ID (ULID)
 - References to precursor events
 - A payload describing the change
@@ -56,6 +57,7 @@ A single event that may or may not be applied to an entity. Events are immutable
 ### Node
 
 A participant in the Ankurah network. Nodes can be servers, clients, or peers. Each node has:
+
 - A storage backend
 - A policy agent (for permissions)
 - Connection handlers
@@ -64,6 +66,7 @@ A participant in the Ankurah network. Nodes can be servers, clients, or peers. E
 ### Storage Engine
 
 A means of storing and retrieving data which is generally durable (but not necessarily). Available engines:
+
 - **Sled**: Embedded KV store
 - **Postgres**: Relational database
 - **IndexedDB**: Browser storage (WASM)
@@ -78,6 +81,7 @@ A collection of entities in a storage engine. The physical representation of a C
 ### Transaction
 
 A unit of work that groups multiple operations. Transactions provide:
+
 - Atomicity: All operations succeed or fail together
 - Isolation: Operations are isolated from other transactions
 - Consistency: Database constraints are maintained
@@ -103,6 +107,7 @@ node.subscribe::<_,_,AlbumView>("year > '2000'", |changes| {
 ### ULID
 
 Universally Unique Lexicographically Sortable Identifier. Used for operation IDs to enable:
+
 - Distributed ID generation without coordination
 - Temporal ordering via lexicographic sorting
 - Compact representation (128-bit)
@@ -110,6 +115,7 @@ Universally Unique Lexicographically Sortable Identifier. Used for operation IDs
 ### DAG (Directed Acyclic Graph)
 
 The structure formed by events and their precursor relationships. The DAG enables:
+
 - Causal consistency
 - Conflict detection
 - Efficient synchronization
@@ -117,6 +123,7 @@ The structure formed by events and their precursor relationships. The DAG enable
 ### Lineage
 
 The chain of events that led to an entity's current state. Used for:
+
 - Audit trails
 - Conflict resolution
 - Replication
@@ -144,6 +151,7 @@ A query that automatically updates when the underlying data changes. Implemented
 ### Policy Agent
 
 A component that controls access to operations. Agents decide:
+
 - Can a node read an entity?
 - Can a node modify an entity?
 - Can a node subscribe to a collection?
@@ -162,4 +170,3 @@ let album = context.create(&Album { /* ... */ }).await?;
 - See [What is Ankurah?](what-is-ankurah.md) for a high-level overview
 - Check [Architecture](architecture.md) for how these concepts fit together
 - Visit [Examples](examples.md) for practical usage
-
