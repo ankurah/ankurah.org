@@ -47,11 +47,8 @@ jobs:
           chmod +x /tmp/liaison
           sudo mv /tmp/liaison /usr/local/bin/liaison
 
-      - name: Transclude code examples
-        run: liaison index.html
-
-      - name: Verify code examples are up to date
-        run: liaison --check index.html
+            - name: Verify code examples are up to date
+              run: liaison --check index.html
 
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v2
