@@ -1,0 +1,11 @@
+[workspace]
+members = ["model", "server", "wasm-bindings"]
+resolver = "2"
+
+[workspace.dependencies]
+ankurah = "0.6.8"
+ankurah-signals = "0.6.8"
+ankql = "0.6.8"
+serde = { version = "1.0", features = ["derive"] }
+anyhow = "1.0"
+

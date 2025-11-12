@@ -1,0 +1,13 @@
+[package]
+name = "ankurah-org-example-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ankurah-org-example-model = { path = "../model" }
+ankurah = { workspace = true }
+ankurah-websocket-server = "0.6.8"
+ankurah-storage-sled = "0.6.8"
+anyhow = { workspace = true }
+tokio = { version = "1", features = ["rt-multi-thread"] }
+

@@ -1,0 +1,19 @@
+# Liaison configuration for ankurah.org
+# Automatically transclude code examples from the example/ workspace into the landing page
+
+[glob]
+# Files to process (empty = specify on command line)
+include = [
+    "index.html",
+]
+
+# Files/directories to exclude from processing
+exclude = [
+    "target/**",
+    "node_modules/**",
+    "book/**",           # mdBook output directory
+    "example/target/**", # Example workspace build artifacts
+    "example/wasm-bindings/pkg/**",
+    "example/react-app/node_modules/**",
+    "example/react-app/dist/**",
+]

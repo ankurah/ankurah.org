@@ -33,15 +33,15 @@
                     <img src="images/logo-transparent-256.png" alt="Ankurah Logo" class="hero-logo">
                     <h1>Ankurah</h1>
                 </div>
-                <p class="tagline">The root of all cosmic projections of state</p>
+                <p class="tagline">(The root of all cosmic projections of state)</p>
                 <p class="subtitle">A distributed state-management framework that enables real-time data synchronization across multiple nodes with built-in observability.</p>
                 <div class="cta-buttons">
                     <a href="getting-started.html" class="btn btn-primary">Get Started</a>
                     <a href="what-is-ankurah.html" class="btn btn-secondary">Learn More</a>
                 </div>
                 <div class="status-notice">
-                    <span class="badge">Early Development</span>
-                    <span>Not yet ready for production use</span>
+                    <span class="badge">Beta</span>
+                    <span>It works! But exercise caution in production</span>
                 </div>
             </div>
             <div class="scroll-indicator">
@@ -57,26 +57,34 @@
             <div class="feature-grid">
                 <div class="feature-card">
                     <h3><span class="feature-icon-inline">1️⃣</span>Schema-First Design</h3>
-                    <pre class="feature-code"><code>#[derive(Model)]
-struct Album { 
-  name: String, 
-  year: u16 
+                    <pre class="feature-code"><code transclude="example/model/src/lib.rs#model">#[derive(Model, Debug, Serialize, Deserialize)]
+pub struct Album {
+    pub name: String,
+    pub artist: String,
+    pub year: i32,
 }</code></pre>
                 </div>
                 <div class="feature-card">
                     <h3><span class="feature-icon-inline">🔍</span>Reactive Queries</h3>
                     <div class="code-label">Rust</div>
-                    <pre class="feature-code"><code>let q&thinsp;=&thinsp;ctx.query::&lt;AlbumView&gt;("year > 1985");</code></pre>
+                    <pre class="feature-code"><code transclude="example/server/src/main.rs#reactive-query-rust">let live_query = ctx.query::&lt;AlbumView&gt;(&quot;year &gt; 1985&quot;)?;
+use ankurah::signals::Get;
+live_query.get(); // tracked by observer</code></pre>
                     <div class="code-label">TypeScript</div>
-                    <pre class="feature-code"><code class="language-typescript">function MyCmp = signalObserver(() =&gt;{
-  const q = useMemo(() =&gt;
-    Album.query("year > 1985"), []);
-  return (
-    &lt;div&gt;
-    {q.items} /*tracked by ReactObserver*/
-    &lt;/div&gt;
-  ) 
-}</code></pre>
+                    <pre class="feature-code"><code class="language-typescript" transclude="example/react-app/src/App.tsx#react-component">export const AlbumList = signalObserver(() =&gt; {
+    const albums = useMemo(() =&gt;
+        Album.query(ctx(), &quot;year &gt; 1985&quot;)
+        , []);
+
+    return (
+        &lt;ul&gt;
+            {albums.items.map(album =&gt; (
+                &lt;li&gt;{album.name}
+                    ({album.year})&lt;/li&gt;
+            ))}
+        &lt;/ul&gt;
+    );
+});</code></pre>
                 </div>
                 <div class="feature-card">
                     <h3><span class="feature-icon-inline">🔌</span>Local-First</h3>
@@ -109,36 +117,48 @@ struct Album {
             <h2>Quick Example</h2>
             
             <div class="code-label">Server</div>
-            <pre><code>let storage = SledStorageEngine::new("./data")?;
+            <pre><code transclude="example/server/src/main.rs#server-example">let storage = SledStorageEngine::new()?;
 let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
 
 let ctx = node.context(ankurah::policy::DEFAULT_CONTEXT)?;
 let trx = ctx.begin();
-trx.create(&Album { 
-    name: "Parade".into(),
-    year: 1986 
-}).await?;
+trx.create(&amp;Album {
+    name: &quot;Parade&quot;.into(),
+    artist: &quot;Prince&quot;.into(),
+    year: 1986,
+})
+.await?;
 trx.commit().await?;</code></pre>
 
             <div class="code-label">Client</div>
-            <pre><code>let storage = IndexedDBStorageEngine::open("myapp").await?;
+            <pre><code transclude="example/wasm-bindings/src/lib.rs#client-example">let storage = IndexedDBStorageEngine::open(&quot;myapp&quot;)
+    .await
+    .map_err(|e| JsValue::from_str(&amp;e.to_string()))?;
 let node = Node::new(Arc::new(storage), PermissiveAgent::new());
-let client = WebsocketClient::new(node.clone(), "ws://localhost:9797")?;
+let _client = WebsocketClient::new(node.clone(), server_url)
+    .map_err(|e| JsValue::from_str(&amp;format!(&quot;{:?}&quot;, e)))?;
 
-let ctx = node.context(ankurah::policy::DEFAULT_CONTEXT)?;
-let albums = ctx.query::&lt;AlbumView&gt;("year > 1985").await?;</code></pre>
+let context = node
+    .context(DEFAULT_CONTEXT)
+    .map_err(|e| JsValue::from_str(&amp;e.to_string()))?;
+let _albums = context
+    .query::&lt;ankurah_org_example_model::AlbumView&gt;(&quot;year &gt; 1985&quot;)
+    .map_err(|e| JsValue::from_str(&amp;e.to_string()))?;</code></pre>
 
             <div class="code-label">React Component</div>
-            <pre><code class="language-typescript">export const AlbumList = signalObserver(() =&gt; {
-  const albums = useMemo(() =&gt; Album.query(ctx(), "year > 1985"), []);
-  
-  return (
-    &lt;ul&gt;
-      {albums.items.map(album =&gt; (
-        &lt;li key={album.id}&gt;{album.name} ({album.year})&lt;/li&gt;
-      ))}
-    &lt;/ul&gt;
-  ); // albums.items is tracked by signalObserver
+            <pre><code class="language-typescript" transclude="example/react-app/src/App.tsx#react-component">export const AlbumList = signalObserver(() =&gt; {
+    const albums = useMemo(() =&gt;
+        Album.query(ctx(), &quot;year &gt; 1985&quot;)
+        , []);
+
+    return (
+        &lt;ul&gt;
+            {albums.items.map(album =&gt; (
+                &lt;li&gt;{album.name}
+                    ({album.year})&lt;/li&gt;
+            ))}
+        &lt;/ul&gt;
+    );
 });</code></pre>
 
             <a href="examples.html" class="btn btn-secondary">More Examples →</a>

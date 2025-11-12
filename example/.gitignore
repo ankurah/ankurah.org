@@ -1,0 +1,27 @@
+# Rust
+target/
+Cargo.lock
+
+# Sled database
+data/
+
+# WASM
+wasm-bindings/pkg/
+
+# React
+react-app/node_modules/
+react-app/dist/
+react-app/bun.lockb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+
