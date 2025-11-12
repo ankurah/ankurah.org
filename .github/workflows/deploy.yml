@@ -42,13 +42,13 @@ jobs:
 
       - name: Install liaison
         run: |
-          curl -L -o /tmp/liaison https://github.com/dnorman/liaison/releases/download/v0.1.2/liaison-linux-amd64
-          echo "5d3dde8f091c74b09242efb9c886a4ef62ce76377582ebc5e6de5eff937ff81a /tmp/liaison" | sha256sum -c
+          curl -L -o /tmp/liaison https://github.com/dnorman/liaison/releases/download/untagged-c0b96b218911574cb720/liaison-linux-amd64
+          echo "6899799117b0f25c2b02555c83d486c278351c8c8e387674aeb6ffdec13af97f /tmp/liaison" | sha256sum -c
           chmod +x /tmp/liaison
           sudo mv /tmp/liaison /usr/local/bin/liaison
 
-            - name: Verify code examples are up to date
-              run: liaison --check index.html
+      - name: Verify code examples are up to date
+        run: liaison --check index.html
 
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v2
