@@ -7,7 +7,11 @@ edition = "2021"
 ankurah-org-example-model = { path = "../model" }
 ankurah = { workspace = true }
 ankurah-websocket-server = "0.6.8"
+ankurah-websocket-client = "0.6.8"
 ankurah-storage-sled = "0.6.8"
+ankurah-storage-postgres = "0.6.8"
+bb8 = "0.9"
+bb8-postgres = "0.9"
 anyhow = { workspace = true }
 tokio = { version = "1", features = ["rt-multi-thread"] }
-
+dirs = "5.0"

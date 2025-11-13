@@ -15,4 +15,5 @@ ankurah-signals = { version = "0.6.8", features = ["wasm", "react", "jsvalue"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
+anyhow = { workspace = true }
 

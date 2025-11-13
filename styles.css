@@ -23,7 +23,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1500px;
     margin: 0 auto;
     padding: 0 20px;
 }
@@ -424,12 +424,13 @@ body {
 
 .feature-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 440px));
+    gap: 1.5rem;
+    justify-content: center;
 }
 
 .feature-card {
-    padding: 1.6rem;
+    padding: 1.2rem;
     background: var(--bg-light);
     border-radius: 12px;
     transition: transform 0.3s, box-shadow 0.3s;
@@ -459,6 +460,13 @@ body {
 .feature-card p {
     color: var(--text-light);
     line-height: 1.7;
+}
+
+.feature-card .feature-note {
+    font-size: 0.7rem;
+    color: #bbb;
+    margin-top: 0.75rem;
+    line-height: 1.5;
 }
 
 .code-label {
@@ -494,7 +502,7 @@ body {
     line-height: 1.4;
     color: var(--text-dark);
     background: rgba(0, 0, 0, 0.03);
-    padding: 0.6rem;
+    padding: 0.5rem;
     border-radius: 8px;
     border-left: 3px solid var(--primary);
     white-space: pre;
@@ -516,8 +524,8 @@ body {
 }
 
 .code-example pre {
-    background: var(--text-dark);
-    color: #e0e0e0;
+    background: #dee2f8;
+    color: #474747;
     padding: 2rem;
     border-radius: 12px;
     overflow-x: auto;

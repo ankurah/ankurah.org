@@ -119,3 +119,6 @@ echo -e "${YELLOW}Press Ctrl+C to stop all services${NC}\n"
 wait
 
 
+
+
+
