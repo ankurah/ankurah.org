@@ -132,7 +132,7 @@ Subscriptions let you receive real-time updates for entities matching a query:
 
 ```rust
 // Subscribe to all published posts
-let sub = context.subscribe::<_,_,BlogPostView>(
+let sub = context.query::<BlogPostView>(
     "published = true",
     |changes| {
         for change in changes.created {
@@ -145,7 +145,7 @@ let sub = context.subscribe::<_,_,BlogPostView>(
 ).await?;
 
 // Subscribe with complex queries
-let sub = context.subscribe::<_,_,BlogPostView>(
+let sub = context.query::<BlogPostView>(
     "published = true AND author = 'Alice' AND tags CONTAINS 'rust'",
     |changes| {
         println!("Alice published a new Rust post!");

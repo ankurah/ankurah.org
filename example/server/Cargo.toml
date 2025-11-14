@@ -6,10 +6,10 @@ edition = "2021"
 [dependencies]
 ankurah-org-example-model = { path = "../model" }
 ankurah = { workspace = true }
-ankurah-websocket-server = "0.6.8"
-ankurah-websocket-client = "0.6.8"
-ankurah-storage-sled = "0.6.8"
-ankurah-storage-postgres = "0.6.8"
+ankurah-websocket-server = "0.7.0"
+ankurah-websocket-client = "0.7.0"
+ankurah-storage-sled = "0.7.0"
+ankurah-storage-postgres = "0.7.0"
 bb8 = "0.9"
 bb8-postgres = "0.9"
 anyhow = { workspace = true }

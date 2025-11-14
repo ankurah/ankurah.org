@@ -40,7 +40,3 @@ All code on the landing page is implemented here:
 - `wasm-pack` - Install: `curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh`
 - `bun` - Install: `curl -fsSL https://bun.sh/install | bash`
 - `cargo-watch` (optional, for dev.sh) - Install: `cargo install cargo-watch`
-
-
-
-
