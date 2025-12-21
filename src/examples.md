@@ -2,293 +2,81 @@
 
 This page contains practical code examples demonstrating key Ankurah features.
 
-## Inter-Node Subscription
-
-This example shows how to set up a server and client node, connect them, and subscribe to changes:
-
-```rust
-use ankurah::prelude::*;
-use ankurah_storage_sled::SledStorageEngine;
-use ankurah_connector_local_process::LocalProcessConnection;
-
-// Create server node with durable storage
-let server = Node::new_durable(
-    Arc::new(SledStorageEngine::new_test()?),
-    PermissiveAgent::new()
-);
-
-// Initialize a new "system" (only done once on first startup)
-server.system.create()?;
-
-// Create a context for the server
-let server = server.context(context_data)?;
-
-// Create client node
-let client = Node::new(
-    Arc::new(SledStorageEngine::new_test()?),
-    PermissiveAgent::new()
-);
-
-// Connect nodes using local process connection
-let _conn = LocalProcessConnection::new(&server, &client).await?;
-
-// Wait for the client to join the server "system"
-client.system.wait_system_ready().await;
-let client = client.context(context_data)?;
-
-// Subscribe to changes on the client
-let subscription = client.subscribe::<_,_,AlbumView>(
-    "name = 'Origin of Symmetry'",
-    |changes| {
-        println!("Received changes: {}", changes);
-    }
-).await?;
-
-// Create a new album on the server
-let trx = server.begin();
-let album = trx.create(&Album {
-    name: "Origin of Symmetry".into(),
-    year: "2001".into(),
-}).await?;
-trx.commit().await?;
-
-// The subscription callback will fire automatically!
-```
-
 ## Defining a Model
 
-Models define the schema for your entities:
+<pre><code transclude="example/model/src/lib.rs#model">#[derive(Model, Debug, Serialize, Deserialize)]
+pub struct Album {
+    #[active_type(YrsString)]
+    pub name: String,
+    pub artist: String,
+    pub year: i32,
+}</code></pre>
 
-```rust
-use ankurah::prelude::*;
+This automatically generates:
+- `AlbumView` (read-only)
+- `AlbumMutable` (for updates)
 
-// Define your model
-#[derive(Model, Clone, Debug)]
-struct BlogPost {
-    title: String,
-    content: String,
-    author: String,
-    published: bool,
-    tags: Vec<String>,
-}
+See [Defining Models](models.md) for full documentation.
 
-// This automatically generates:
-// - BlogPostView (read-only)
-// - BlogPostMutable (for updates)
-```
+## Server Setup
 
-## Creating Entities
+<pre><code transclude="example/server/src/main.rs#server-example">let storage = SledStorageEngine::with_path(storage_dir)?;
+let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
+node.system.create().await?;
 
-```rust
-// Start a transaction
-let trx = context.begin();
+let mut server = WebsocketServer::new(node);
+println!(&quot;Running server...&quot;);
+server.run(&quot;0.0.0.0:9797&quot;).await?;</code></pre>
 
-// Create a new entity
-let post = trx.create(&BlogPost {
-    title: "Getting Started with Ankurah".into(),
-    content: "Ankurah makes distributed state management easy...".into(),
-    author: "Alice".into(),
-    published: true,
-    tags: vec!["tutorial".into(), "rust".into()],
-}).await?;
+## Rust Client
 
-// Commit the transaction
-trx.commit().await?;
+<pre><code transclude="example/server/src/main.rs#rust-client-example">let storage = SledStorageEngine::new_test()?;
+let node = Node::new(Arc::new(storage), PermissiveAgent::new());
+let _client = WebsocketClient::new(node.clone(), &quot;ws://localhost:9797&quot;).await?;
+node.system.wait_system_ready().await;
 
-println!("Created post with ID: {}", post.id());
-```
+// Create album
+let ctx = node.context(ankurah::policy::DEFAULT_CONTEXT)?;
+let trx = ctx.begin();
+trx.create(&amp;Album { name: &quot;Parade&quot;.into(), artist: &quot;Prince&quot;.into(), year: 1986 }).await?;
+trx.commit().await?;</code></pre>
 
-## Reading Entities
+## React Component
 
-```rust
-// Get a view of the entity (read-only)
-let view: BlogPostView = post.view()?;
-
-println!("Title: {}", view.title);
-println!("Author: {}", view.author);
-println!("Published: {}", view.published);
-```
-
-## Updating Entities
-
-```rust
-// Start a transaction
-let trx = context.begin();
-
-// Get a mutable handle
-let mut mutable: BlogPostMutable = post.mutable(&trx)?;
-
-// Update fields
-mutable.title.set("Updated: Getting Started with Ankurah");
-mutable.published.set(true);
-
-// Commit changes
-trx.commit().await?;
-```
-
-## Querying with Subscriptions
-
-Subscriptions let you receive real-time updates for entities matching a query:
-
-```rust
-// Subscribe to all published posts
-let sub = context.query::<BlogPostView>(
-    "published = true",
-    |changes| {
-        for change in changes.created {
-            println!("New published post: {}", change.view.title);
-        }
-        for change in changes.updated {
-            println!("Updated post: {}", change.view.title);
-        }
-    }
-).await?;
-
-// Subscribe with complex queries
-let sub = context.query::<BlogPostView>(
-    "published = true AND author = 'Alice' AND tags CONTAINS 'rust'",
-    |changes| {
-        println!("Alice published a new Rust post!");
-    }
-).await?;
-```
-
-## Using Signals in React
-
-Ankurah provides React hooks for reactive UI updates:
-
-```typescript
-import { useQuery, useEntity } from "ankurah-react";
-
-function BlogPostList() {
-  // Subscribe to all published posts
-  const posts = useQuery<BlogPost>("BlogPost", "published = true");
-
+<pre><code transclude="example/react-app/src/App.tsx#react-component">/* creates and Binds a ReactObserver to the component */
+const AlbumList = signalObserver(({ albums }: Props) =&gt; {
   return (
-    <div>
-      {posts.map((post) => (
-        <BlogPostCard key={post.id} postId={post.id} />
+    &lt;ul&gt;
+      /* React Observer automatically tracks albums */
+      {albums.items.map((album) =&gt; (
+        &lt;li&gt;{album.name}&lt;/li&gt;
       ))}
-    </div>
+    &lt;/ul&gt;
   );
-}
+});</code></pre>
 
-function BlogPostCard({ postId }) {
-  // Subscribe to a specific entity
-  const post = useEntity<BlogPost>(postId);
+See [React Usage](queries/react.md) for full documentation.
 
-  if (!post) return <div>Loading...</div>;
+## Live Query
 
-  return (
-    <div>
-      <h2>{post.title}</h2>
-      <p>By {post.author}</p>
-      <p>{post.content}</p>
-    </div>
-  );
-}
-```
+<pre><code transclude="example/server/src/main.rs#livequery-rust">let q: LiveQuery&lt;AlbumView&gt; = ctx.query(&quot;year &gt; 1985&quot;)?;</code></pre>
 
-## WebSocket Client Setup (WASM)
+See [Querying Data](queries/index.md) for full documentation.
 
-Connect a browser client to a server:
+## Storage Backends
+
+### Sled (Embedded)
+
+<pre><code transclude="example/server/src/main.rs#storage-sled">let storage = SledStorageEngine::new()?;</code></pre>
+
+### Postgres
+
+<pre><code transclude="example/server/src/main.rs#storage-postgres">let storage = Postgres::open(uri).await?;</code></pre>
+
+### IndexedDB (WASM)
 
 ```rust
-use ankurah_wasm::*;
-use ankurah_connector_websocket_client_wasm::*;
-
-// Create a client node with IndexedDB storage
 let storage = IndexedDBStorageEngine::new("my-app").await?;
-let client = Node::new(Arc::new(storage), PermissiveAgent::new());
-
-// Connect to server via WebSocket
-let ws = WebSocketClientWasm::connect(
-    "ws://localhost:8080",
-    &client
-).await?;
-
-// Wait for system to be ready
-client.system.wait_system_ready().await;
-
-// Now you can use the client normally
-let context = client.context(user_data)?;
-```
-
-## Transaction Error Handling
-
-```rust
-use ankurah::error::Result;
-
-async fn create_post_with_validation(
-    context: &Context,
-    title: &str,
-    content: &str,
-) -> Result<Entity> {
-    // Validate input
-    if title.is_empty() {
-        return Err(AnkurahError::validation("Title cannot be empty"));
-    }
-
-    let trx = context.begin();
-
-    // Create the post
-    let post = trx.create(&BlogPost {
-        title: title.into(),
-        content: content.into(),
-        author: "System".into(),
-        published: false,
-        tags: vec![],
-    }).await?;
-
-    // Commit (or automatically rollback on error)
-    trx.commit().await?;
-
-    Ok(post)
-}
-```
-
-## Working with Collections
-
-```rust
-// Get a collection reference
-let posts = context.collection::<BlogPost>("BlogPost");
-
-// Count entities
-let count = posts.count().await?;
-println!("Total posts: {}", count);
-
-// Iterate all entities (careful with large collections!)
-let all_posts = posts.all().await?;
-for post in all_posts {
-    let view: BlogPostView = post.view()?;
-    println!("- {}", view.title);
-}
-```
-
-## Custom Storage Backend
-
-```rust
-use ankurah::storage::*;
-
-// Create nodes with different backends
-
-// Sled (embedded KV)
-let node = Node::new(
-    Arc::new(SledStorageEngine::new("./data")?),
-    agent
-);
-
-// Postgres
-let node = Node::new(
-    Arc::new(PostgresStorageEngine::connect("postgresql://...").await?),
-    agent
-);
-
-// IndexedDB (WASM only)
-let node = Node::new(
-    Arc::new(IndexedDBStorageEngine::new("my-app").await?),
-    agent
-);
 ```
 
 ## Next Steps

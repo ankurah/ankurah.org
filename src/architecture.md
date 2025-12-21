@@ -44,11 +44,8 @@ All changes in Ankurah are represented as immutable events:
 Nodes can subscribe to changes using SQL-like queries:
 
 ```rust
-client.subscribe::<_,_,AlbumView>(
-    "name LIKE 'Origin%' AND year > '2000'",
-    |changes| {
-        // Handle matching changes
-    }
+let livequery = context.query::<AlbumView>(
+    "name LIKE 'Origin%' AND year > '2000'"
 ).await?;
 ```
 

@@ -5,6 +5,7 @@
 # Files to process (empty = specify on command line)
 include = [
     "index.html",
+    "src/**/*.md",
 ]
 
 # Files/directories to exclude from processing

@@ -89,3 +89,58 @@ async fn query_example(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyho
 
     Ok(())
 }
+
+// Query examples for documentation
+#[allow(dead_code)]
+#[rustfmt::skip]
+async fn fetch_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyhow::Result<()> {
+    use ankurah_org_example_model::AlbumView;
+
+    let ctx = node.context(DEFAULT_CONTEXT)?;
+
+    // liaison id=fetch-string
+    // Fetch with a string query - one-time snapshot
+    let albums: Vec<AlbumView> = ctx.fetch("year > 1985").await?;
+    // liaison end
+
+    // liaison id=fetch-format
+    // Using format! for variable interpolation
+    let year = 1985;
+    let query = format!("year > {year}");
+    let albums: Vec<AlbumView> = ctx.fetch(query.as_str()).await?;
+    // liaison end
+
+    // liaison id=fetch-complex
+    // Multiple conditions with format!
+    let min_year = 1980;
+    let max_year = 1990;
+    let query = format!("year >= {min_year} AND year <= {max_year}");
+    let albums: Vec<AlbumView> = ctx.fetch(query.as_str()).await?;
+    // liaison end
+
+    let _ = albums;
+    Ok(())
+}
+
+#[allow(dead_code)]
+#[rustfmt::skip]
+fn query_string_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyhow::Result<()> {
+    use ankurah_org_example_model::AlbumView;
+
+    let ctx = node.context(DEFAULT_CONTEXT)?;
+
+    // liaison id=query-string
+    // query() returns a LiveQuery with reactive updates
+    let live: LiveQuery<AlbumView> = ctx.query("year > 1985")?;
+    // liaison end
+
+    // liaison id=query-format
+    // Using format! for variable interpolation  
+    let year = 1985;
+    let query = format!("year > {year}");
+    let live: LiveQuery<AlbumView> = ctx.query(query.as_str())?;
+    // liaison end
+
+    let _ = live;
+    Ok(())
+}

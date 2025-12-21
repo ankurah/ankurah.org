@@ -4,7 +4,7 @@ Ankurah is a state-management framework that enables real-time data synchronizat
 
 It supports multiple storage and data type backends to enable no-compromise representation of your data.
 
-> **Note:** This project is in the early stages of development, and is not yet ready for production use.
+> **Note:** This project is beta status. It works, but be careful with production use.
 
 ## Key Features
 
