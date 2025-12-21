@@ -3,7 +3,6 @@ title = "Ankurah"
 description = "A distributed state-management framework that enables real-time data synchronization across multiple nodes with built-in observability."
 authors = ["Ankurah Contributors"]
 language = "en"
-multilingual = false
 src = "src"
 
 [build]
