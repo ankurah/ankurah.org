@@ -8,7 +8,7 @@ default = []
 wasm = ["dep:wasm-bindgen", "ankurah/wasm", "ankurah/react"]
 
 [dependencies]
-ankurah = { version = "0.7.0", features = ["derive"] }
+ankurah = { version = "0.7.8", features = ["derive"] }
 serde = { workspace = true }
 wasm-bindgen = { version = "0.2", optional = true }
 

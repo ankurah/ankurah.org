@@ -8,10 +8,10 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 ankurah-org-example-model = { path = "../model", features = ["wasm"] }
-ankurah = { version = "0.7.0", features = ["derive", "wasm"] }
-ankurah-websocket-client-wasm = "0.7.0"
-ankurah-storage-indexeddb-wasm = "0.7.0"
-ankurah-signals = { version = "0.7.0", features = ["wasm", "react", "jsvalue"] }
+ankurah = { version = "0.7.8", features = ["derive", "wasm"] }
+ankurah-websocket-client-wasm = "0.7.8"
+ankurah-storage-indexeddb-wasm = "0.7.8"
+ankurah-signals = { version = "0.7.8", features = ["wasm", "react", "jsvalue"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"

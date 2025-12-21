@@ -15,16 +15,11 @@ field <= value      # Less than or equal
 
 ### Examples
 
-```rust
-// String equality
-ctx.fetch::<AlbumView>("name = 'Dark Side of the Moon'").await?
+<pre><code transclude="example/server/src/main.rs#syntax-string-eq">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;name = &#39;Dark Side of the Moon&#39;&quot;).await?;</code></pre>
 
-// Numeric comparison
-ctx.fetch::<AlbumView>("year > 1985").await?
+<pre><code transclude="example/server/src/main.rs#syntax-numeric">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;year &gt; 1985&quot;).await?;</code></pre>
 
-// Not equal
-ctx.fetch::<AlbumView>("artist != 'Unknown'").await?
-```
+<pre><code transclude="example/server/src/main.rs#syntax-not-eq">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;artist != &#39;Unknown&#39;&quot;).await?;</code></pre>
 
 ## Logical Operators
 
@@ -43,16 +38,11 @@ Use parentheses for complex logic:
 
 ### Examples
 
-```rust
-// AND - both conditions must match
-ctx.fetch::<AlbumView>("year > 1980 AND year < 1990").await?
+<pre><code transclude="example/server/src/main.rs#syntax-and">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;year &gt; 1980 AND year &lt; 1990&quot;).await?;</code></pre>
 
-// OR - either condition matches
-ctx.fetch::<AlbumView>("artist = 'Prince' OR artist = 'Madonna'").await?
+<pre><code transclude="example/server/src/main.rs#syntax-or">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;artist = &#39;Prince&#39; OR artist = &#39;Madonna&#39;&quot;).await?;</code></pre>
 
-// Combined
-ctx.fetch::<AlbumView>("(artist = 'Prince' OR artist = 'Madonna') AND year > 1985").await?
-```
+<pre><code transclude="example/server/src/main.rs#syntax-combined">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;(artist = &#39;Prince&#39; OR artist = &#39;Madonna&#39;) AND year &gt; 1985&quot;).await?;</code></pre>
 
 ## The IN Operator
 
@@ -62,16 +52,9 @@ Check if a value is in a list:
 field IN (value1, value2, value3)
 ```
 
-### Examples
+### Example
 
-```rust
-// Literal list
-ctx.fetch::<AlbumView>("year IN (1984, 1985, 1986)").await?
-
-// With the fetch! macro and a Vec
-let years = vec![1984, 1985, 1986];
-let albums: Vec<AlbumView> = fetch!(ctx, year IN {years}).await?;
-```
+<pre><code transclude="example/server/src/main.rs#syntax-in">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;year IN (1984, 1985, 1986)&quot;).await?;</code></pre>
 
 ## Ordering Results
 
@@ -84,91 +67,65 @@ Use `ORDER BY` to sort results:
 
 ### Examples
 
-```rust
-// Sort by year, newest first
-ctx.fetch::<AlbumView>("year > 1980 ORDER BY year DESC").await?
+<pre><code transclude="example/server/src/main.rs#syntax-order-desc">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;year &gt; 1980 ORDER BY year DESC&quot;).await?;</code></pre>
 
-// Sort alphabetically by name
-ctx.fetch::<AlbumView>("true ORDER BY name ASC").await?
-```
+<pre><code transclude="example/server/src/main.rs#syntax-order-asc">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;true ORDER BY name ASC&quot;).await?;</code></pre>
 
 ## Selecting All Entities
 
 Use `true` to match all entities:
 
-```rust
-// Get all albums, sorted by name
-ctx.fetch::<AlbumView>("true ORDER BY name ASC").await?
-```
+<pre><code transclude="example/server/src/main.rs#syntax-all">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;true ORDER BY name ASC&quot;).await?;</code></pre>
 
 ## String Values
 
 String literals use single quotes:
 
-```rust
-ctx.fetch::<AlbumView>("name = 'Purple Rain'").await?
-```
+<pre><code transclude="example/server/src/main.rs#syntax-string-literal">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;name = &#39;Purple Rain&#39;&quot;).await?;</code></pre>
 
 To include a single quote in a string, escape it with another single quote:
 
-```rust
-ctx.fetch::<AlbumView>("name = 'Rock ''n'' Roll'").await?
-```
-
-## Nested Property Access
-
-For structured data (like JSON fields), use dot notation:
-
-```rust
-// Query nested JSON properties
-ctx.fetch::<EntityView>("data.category = 'music'").await?
-ctx.fetch::<EntityView>("metadata.author.name = 'Alice'").await?
-```
+<pre><code transclude="example/server/src/main.rs#syntax-escape-quote">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;name = &#39;Rock &#39;&#39;n&#39;&#39; Roll&#39;&quot;).await?;</code></pre>
 
 ## Variable Interpolation
 
 Use Rust's `format!` macro for dynamic queries:
 
-```rust
-// Variable interpolation
-let year = 1985;
-let query = format!("year > {year}");
-ctx.fetch::<AlbumView>(query.as_str()).await?
+<pre><code transclude="example/server/src/main.rs#syntax-interpolate-int">let year = 1985;
+let query = format!(&quot;year &gt; {year}&quot;);
 
-// String values need quotes
-let artist = "Prince";
-let query = format!("artist = '{artist}'");
-ctx.fetch::<AlbumView>(query.as_str()).await?
+let albums: Vec&lt;AlbumView&gt; = ctx.fetch(query.as_str()).await?;</code></pre>
 
-// Multiple variables
-let min_year = 1980;
+String values need quotes:
+
+<pre><code transclude="example/server/src/main.rs#syntax-interpolate-str">let artist = &quot;Prince&quot;;
+let query = format!(&quot;artist = &#39;{artist}&#39;&quot;);
+
+let albums: Vec&lt;AlbumView&gt; = ctx.fetch(query.as_str()).await?;</code></pre>
+
+Multiple variables:
+
+<pre><code transclude="example/server/src/main.rs#syntax-interpolate-multi">let min_year = 1980;
 let max_year = 1990;
-let query = format!("year >= {min_year} AND year <= {max_year}");
-ctx.fetch::<AlbumView>(query.as_str()).await?
-```
+let query = format!(&quot;year &gt;= {min_year} AND year &lt;= {max_year}&quot;);
+
+let albums: Vec&lt;AlbumView&gt; = ctx.fetch(query.as_str()).await?;</code></pre>
 
 ## Common Patterns
 
 ### Check if entity exists
 
-```rust
-let exists = !ctx.fetch::<AlbumView>("name = 'Purple Rain'").await?.is_empty();
-```
+<pre><code transclude="example/server/src/main.rs#syntax-exists">let exists = !ctx.fetch::&lt;AlbumView&gt;(&quot;name = &#39;Purple Rain&#39;&quot;).await?.is_empty();</code></pre>
 
 ### Get first match
 
-```rust
-let album = ctx.fetch::<AlbumView>("name = 'Purple Rain'").await?.into_iter().next();
-```
+<pre><code transclude="example/server/src/main.rs#syntax-first">let album = ctx.fetch::&lt;AlbumView&gt;(&quot;name = &#39;Purple Rain&#39;&quot;).await?.into_iter().next();</code></pre>
 
 ### Count matches
 
-```rust
-let count = ctx.fetch::<AlbumView>("year > 1985").await?.len();
-```
+<pre><code transclude="example/server/src/main.rs#syntax-count">let count = ctx.fetch::&lt;AlbumView&gt;(&quot;year &gt; 1985&quot;).await?.len();</code></pre>
 
 ## Next Steps
 
 - [Querying Data](index.md) - Overview of fetch vs query
 - [React Usage](react.md) - Using queries in React components
-

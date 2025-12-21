@@ -49,6 +49,7 @@ Use Rust's `format!` macro for dynamic queries:
 <pre><code transclude="example/server/src/main.rs#fetch-format">// Using format! for variable interpolation
 let year = 1985;
 let query = format!(&quot;year &gt; {year}&quot;);
+
 let albums: Vec&lt;AlbumView&gt; = ctx.fetch(query.as_str()).await?;</code></pre>
 
 Combine multiple conditions:
@@ -57,6 +58,7 @@ Combine multiple conditions:
 let min_year = 1980;
 let max_year = 1990;
 let query = format!(&quot;year &gt;= {min_year} AND year &lt;= {max_year}&quot;);
+
 let albums: Vec&lt;AlbumView&gt; = ctx.fetch(query.as_str()).await?;</code></pre>
 
 The same pattern works with `query()`:
@@ -64,6 +66,7 @@ The same pattern works with `query()`:
 <pre><code transclude="example/server/src/main.rs#query-format">// Using format! for variable interpolation  
 let year = 1985;
 let query = format!(&quot;year &gt; {year}&quot;);
+
 let live: LiveQuery&lt;AlbumView&gt; = ctx.query(query.as_str())?;</code></pre>
 
 ## Next Steps
