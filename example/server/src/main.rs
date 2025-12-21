@@ -1,4 +1,4 @@
-use ankurah::{policy::DEFAULT_CONTEXT, LiveQuery, Node, PermissiveAgent};
+use ankurah::{fetch, policy::DEFAULT_CONTEXT, selection, LiveQuery, Node, PermissiveAgent};
 use ankurah_org_example_model::Album;
 use ankurah_storage_sled::SledStorageEngine;
 use ankurah_websocket_client::WebsocketClient;
@@ -79,7 +79,8 @@ async fn query_example(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyho
 
     #[allow(unused_variables)]
     // liaison id=livequery-rust
-    let q: LiveQuery<AlbumView> = ctx.query("year > 1985")?;
+    // Using selection! macro with ctx.query()
+    let q: LiveQuery<AlbumView> = ctx.query(selection!("year > 1985"))?;
     // liaison end
     
     // liaison id=signals-rust
@@ -103,21 +104,66 @@ async fn fetch_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyh
     let albums: Vec<AlbumView> = ctx.fetch("year > 1985").await?;
     // liaison end
 
-    // liaison id=fetch-format
-    // Using format! for variable interpolation
-    let year = 1985;
-    let query = format!("year > {year}");
+    // liaison id=fetch-unquoted-eq
+    // Unquoted form: {variable} expands to variable = {variable}
+    let artist = "Prince";
 
-    let albums: Vec<AlbumView> = ctx.fetch(query.as_str()).await?;
+    let albums: Vec<AlbumView> = fetch!(ctx, {artist}).await?;
     // liaison end
 
-    // liaison id=fetch-complex
-    // Multiple conditions with format!
+    // liaison id=fetch-unquoted-gt
+    // Unquoted form with comparison operator: {>year} expands to year > {year}
+    let year = 1985;
+
+    let albums: Vec<AlbumView> = fetch!(ctx, {>year}).await?;
+    // liaison end
+
+    // liaison id=fetch-unquoted-comparisons
+    // All comparison operators work: >, <, >=, <=, !=
+    let year = 1985;
+
+    let _newer: Vec<AlbumView> = fetch!(ctx, {>year}).await?;
+    let _older: Vec<AlbumView> = fetch!(ctx, {<year}).await?;
+    let _gte: Vec<AlbumView> = fetch!(ctx, {>=year}).await?;
+    let _lte: Vec<AlbumView> = fetch!(ctx, {<=year}).await?;
+    let _not_eq: Vec<AlbumView> = fetch!(ctx, {!=year}).await?;
+    // liaison end
+
+    // liaison id=fetch-unquoted-combined
+    // Combine multiple conditions with AND/OR
+    let artist = "Prince";
+    let year = 1985;
+
+    let albums: Vec<AlbumView> = fetch!(ctx, {artist} AND {>year}).await?;
+    // liaison end
+
+    // liaison id=fetch-unquoted-mixed
+    // Mix unquoted variables with explicit comparisons
+    let artist = "Prince";
+    let year = 1985;
+
+    let albums: Vec<AlbumView> = fetch!(ctx, {artist} AND year > {year}).await?;
+    // liaison end
+
+    // liaison id=fetch-quoted-literal
+    // Quoted form for pure string literals
+    let albums: Vec<AlbumView> = fetch!(ctx, "artist = 'Prince' AND year > 1985").await?;
+    // liaison end
+
+    // liaison id=fetch-quoted-positional
+    // Quoted form with positional arguments
     let min_year = 1980;
     let max_year = 1990;
-    let query = format!("year >= {min_year} AND year <= {max_year}");
 
-    let albums: Vec<AlbumView> = ctx.fetch(query.as_str()).await?;
+    let albums: Vec<AlbumView> = fetch!(ctx, "year >= {} AND year <= {}", min_year, max_year).await?;
+    // liaison end
+
+    // liaison id=fetch-quoted-mixed
+    // Quoted form with named variable interpolation
+    let artist = "Prince";
+    let year = 1985;
+
+    let albums: Vec<AlbumView> = fetch!(ctx, "artist = '{}' AND year > {}", artist, year).await?;
     // liaison end
 
     let _ = albums;
@@ -133,15 +179,41 @@ fn query_string_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
 
     // liaison id=query-string
     // query() returns a LiveQuery with reactive updates
-    let live: LiveQuery<AlbumView> = ctx.query("year > 1985")?;
+    let _live: LiveQuery<AlbumView> = ctx.query(selection!("year > 1985"))?;
     // liaison end
 
-    // liaison id=query-format
-    // Using format! for variable interpolation  
-    let year = 1985;
-    let query = format!("year > {year}");
+    // liaison id=query-unquoted-eq
+    // Unquoted form with selection! macro
+    let artist = "Prince";
 
-    let live: LiveQuery<AlbumView> = ctx.query(query.as_str())?;
+    let live: LiveQuery<AlbumView> = ctx.query(selection!({artist}))?;
+    // liaison end
+
+    // liaison id=query-unquoted-gt
+    // Unquoted form with comparison operator
+    let year = 1985;
+
+    let live: LiveQuery<AlbumView> = ctx.query(selection!({>year}))?;
+    // liaison end
+
+    // liaison id=query-unquoted-combined
+    // Combine conditions with AND/OR
+    let artist = "Prince";
+    let year = 1985;
+
+    let live: LiveQuery<AlbumView> = ctx.query(selection!({artist} AND {>year}))?;
+    // liaison end
+
+    // liaison id=query-quoted-literal
+    // Quoted form for string literals
+    let live: LiveQuery<AlbumView> = ctx.query(selection!("artist = 'Prince' AND year > 1985"))?;
+    // liaison end
+
+    // liaison id=query-quoted-positional
+    // Quoted form with positional arguments
+    let year = 1985;
+
+    let live: LiveQuery<AlbumView> = ctx.query(selection!("year > {}", year))?;
     // liaison end
 
     let _ = live;
@@ -205,29 +277,32 @@ async fn syntax_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
     // liaison end
 
     // liaison id=syntax-interpolate-int
+    // Unquoted form: {>year} expands to year > {year}
     let year = 1985;
-    let query = format!("year > {year}");
 
-    let albums: Vec<AlbumView> = ctx.fetch(query.as_str()).await?;
+    let albums: Vec<AlbumView> = fetch!(ctx, {>year}).await?;
     // liaison end
 
     // liaison id=syntax-interpolate-str
+    // Quoted form with positional argument for string values
     let artist = "Prince";
-    let query = format!("artist = '{artist}'");
 
-    let albums: Vec<AlbumView> = ctx.fetch(query.as_str()).await?;
+    let albums: Vec<AlbumView> = fetch!(ctx, "artist = '{}'", artist).await?;
     // liaison end
 
     // liaison id=syntax-interpolate-multi
+    // Multiple variables with quoted form
     let min_year = 1980;
     let max_year = 1990;
-    let query = format!("year >= {min_year} AND year <= {max_year}");
 
-    let albums: Vec<AlbumView> = ctx.fetch(query.as_str()).await?;
+    let albums: Vec<AlbumView> = fetch!(ctx, "year >= {} AND year <= {}", min_year, max_year).await?;
     // liaison end
 
     // liaison id=syntax-exists
-    let exists = !ctx.fetch::<AlbumView>("name = 'Purple Rain'").await?.is_empty();
+    // Check if any entities match the query
+    let album_name = "Purple Rain";
+    let matching_albums: Vec<AlbumView> = fetch!(ctx, "name = '{}'", album_name).await?;
+    let exists = matching_albums.len() > 0;
     // liaison end
 
     // liaison id=syntax-first
@@ -246,7 +321,6 @@ async fn syntax_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
 #[allow(dead_code)]
 #[rustfmt::skip]
 async fn model_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyhow::Result<()> {
-    use ankurah::Mutable;
     use ankurah_org_example_model::{Album, AlbumView};
 
     let ctx = node.context(DEFAULT_CONTEXT)?;

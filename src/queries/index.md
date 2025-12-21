@@ -24,50 +24,98 @@ The results are a `Vec<AlbumView>` containing all matching entities at that mome
 
 Use `query()` when your UI should update automatically as data changes:
 
-<pre><code transclude="example/server/src/main.rs#livequery-rust">let q: LiveQuery&lt;AlbumView&gt; = ctx.query(&quot;year &gt; 1985&quot;)?;</code></pre>
+<pre><code transclude="example/server/src/main.rs#livequery-rust">// Using selection! macro with ctx.query()
+let q: LiveQuery&lt;AlbumView&gt; = ctx.query(selection!(&quot;year &gt; 1985&quot;))?;</code></pre>
 
 A `LiveQuery` is reactive—when entities matching your query are created, updated, or deleted (anywhere in the system), the query's results update automatically.
 
 ## Query Methods
 
-### String Queries
+### Using Macros (Recommended)
 
-The simplest way to query is with a string:
+The recommended way to query is using the `fetch!` and `selection!` macros, which provide compile-time safety and variable interpolation:
 
-```rust
-// fetch with string - one-time snapshot
-let albums: Vec<AlbumView> = ctx.fetch("year > 1985").await?;
+### Variable Interpolation with Macros
 
-// query with string - live subscription
-let live: LiveQuery<AlbumView> = ctx.query("year > 1985")?;
-```
+Use the `fetch!` and `selection!` macros for dynamic queries. They support multiple syntaxes:
 
-### Variable Interpolation with format!
+#### Unquoted Form (Terse)
 
-Use Rust's `format!` macro for dynamic queries:
+The unquoted form is the most concise. Variables expand to equality comparisons by default:
 
-<pre><code transclude="example/server/src/main.rs#fetch-format">// Using format! for variable interpolation
+<pre><code transclude="example/server/src/main.rs#fetch-unquoted-eq">// Unquoted form: {variable} expands to variable = {variable}
+let artist = &quot;Prince&quot;;
+
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, {artist}).await?;</code></pre>
+
+Add comparison operators as prefixes: `{>year}`, `{<year}`, `{>=year}`, `{<=year}`, `{!=year}`:
+
+<pre><code transclude="example/server/src/main.rs#fetch-unquoted-gt">// Unquoted form with comparison operator: {&gt;year} expands to year &gt; {year}
 let year = 1985;
-let query = format!(&quot;year &gt; {year}&quot;);
 
-let albums: Vec&lt;AlbumView&gt; = ctx.fetch(query.as_str()).await?;</code></pre>
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, {&gt;year}).await?;</code></pre>
 
-Combine multiple conditions:
+Combine multiple conditions with AND/OR:
 
-<pre><code transclude="example/server/src/main.rs#fetch-complex">// Multiple conditions with format!
+<pre><code transclude="example/server/src/main.rs#fetch-unquoted-combined">// Combine multiple conditions with AND/OR
+let artist = &quot;Prince&quot;;
+let year = 1985;
+
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, {artist} AND {&gt;year}).await?;</code></pre>
+
+Mix unquoted variables with explicit comparisons:
+
+<pre><code transclude="example/server/src/main.rs#fetch-unquoted-mixed">// Mix unquoted variables with explicit comparisons
+let artist = &quot;Prince&quot;;
+let year = 1985;
+
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, {artist} AND year &gt; {year}).await?;</code></pre>
+
+#### Quoted Form (Flexible)
+
+Use quoted form for string literals and positional arguments:
+
+<pre><code transclude="example/server/src/main.rs#fetch-quoted-literal">// Quoted form for pure string literals
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;artist = &#39;Prince&#39; AND year &gt; 1985&quot;).await?;</code></pre>
+
+Positional arguments with `{}`:
+
+<pre><code transclude="example/server/src/main.rs#fetch-quoted-positional">// Quoted form with positional arguments
 let min_year = 1980;
 let max_year = 1990;
-let query = format!(&quot;year &gt;= {min_year} AND year &lt;= {max_year}&quot;);
 
-let albums: Vec&lt;AlbumView&gt; = ctx.fetch(query.as_str()).await?;</code></pre>
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;year &gt;= {} AND year &lt;= {}&quot;, min_year, max_year).await?;</code></pre>
 
-The same pattern works with `query()`:
+Multiple positional arguments:
 
-<pre><code transclude="example/server/src/main.rs#query-format">// Using format! for variable interpolation  
+<pre><code transclude="example/server/src/main.rs#fetch-quoted-mixed">// Quoted form with named variable interpolation
+let artist = &quot;Prince&quot;;
 let year = 1985;
-let query = format!(&quot;year &gt; {year}&quot;);
 
-let live: LiveQuery&lt;AlbumView&gt; = ctx.query(query.as_str())?;</code></pre>
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;artist = &#39;{}&#39; AND year &gt; {}&quot;, artist, year).await?;</code></pre>
+
+#### With query() and selection!
+
+The same syntaxes work with `ctx.query(selection!(...))`:
+
+<pre><code transclude="example/server/src/main.rs#query-unquoted-eq">// Unquoted form with selection! macro
+let artist = &quot;Prince&quot;;
+
+let live: LiveQuery&lt;AlbumView&gt; = ctx.query(selection!({artist}))?;</code></pre>
+
+<pre><code transclude="example/server/src/main.rs#query-unquoted-gt">// Unquoted form with comparison operator
+let year = 1985;
+
+let live: LiveQuery&lt;AlbumView&gt; = ctx.query(selection!({&gt;year}))?;</code></pre>
+
+<pre><code transclude="example/server/src/main.rs#query-unquoted-combined">// Combine conditions with AND/OR
+let artist = &quot;Prince&quot;;
+let year = 1985;
+
+let live: LiveQuery&lt;AlbumView&gt; = ctx.query(selection!({artist} AND {&gt;year}))?;</code></pre>
+
+<pre><code transclude="example/server/src/main.rs#query-quoted-literal">// Quoted form for string literals
+let live: LiveQuery&lt;AlbumView&gt; = ctx.query(selection!(&quot;artist = &#39;Prince&#39; AND year &gt; 1985&quot;))?;</code></pre>
 
 ## Next Steps
 

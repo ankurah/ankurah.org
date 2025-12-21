@@ -59,7 +59,8 @@ See [React Usage](queries/react.md) for full documentation.
 
 ## Live Query
 
-<pre><code transclude="example/server/src/main.rs#livequery-rust">let q: LiveQuery&lt;AlbumView&gt; = ctx.query(&quot;year &gt; 1985&quot;)?;</code></pre>
+<pre><code transclude="example/server/src/main.rs#livequery-rust">// Using selection! macro with ctx.query()
+let q: LiveQuery&lt;AlbumView&gt; = ctx.query(selection!(&quot;year &gt; 1985&quot;))?;</code></pre>
 
 See [Querying Data](queries/index.md) for full documentation.
 

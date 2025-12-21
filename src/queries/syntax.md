@@ -89,33 +89,81 @@ To include a single quote in a string, escape it with another single quote:
 
 ## Variable Interpolation
 
-Use Rust's `format!` macro for dynamic queries:
+Use the `fetch!` and `selection!` macros for dynamic queries. They support multiple syntaxes:
 
-<pre><code transclude="example/server/src/main.rs#syntax-interpolate-int">let year = 1985;
-let query = format!(&quot;year &gt; {year}&quot;);
+### Unquoted Form
 
-let albums: Vec&lt;AlbumView&gt; = ctx.fetch(query.as_str()).await?;</code></pre>
+The unquoted form is the most concise. Variables expand to equality by default:
 
-String values need quotes:
+```rust
+let artist = "Prince";
+fetch!(ctx, {artist}).await?;  // Equivalent to: artist = 'Prince'
+```
 
-<pre><code transclude="example/server/src/main.rs#syntax-interpolate-str">let artist = &quot;Prince&quot;;
-let query = format!(&quot;artist = &#39;{artist}&#39;&quot;);
+Add comparison operators as prefixes:
 
-let albums: Vec&lt;AlbumView&gt; = ctx.fetch(query.as_str()).await?;</code></pre>
+<pre><code transclude="example/server/src/main.rs#syntax-interpolate-int">// Unquoted form: {&gt;year} expands to year &gt; {year}
+let year = 1985;
+
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, {&gt;year}).await?;</code></pre>
+
+All comparison operators work: `{>var}`, `{<var}`, `{>=var}`, `{<=var}`, `{!=var}`:
+
+<pre><code transclude="example/server/src/main.rs#fetch-unquoted-comparisons">// All comparison operators work: &gt;, &lt;, &gt;=, &lt;=, !=
+let year = 1985;
+
+let _newer: Vec&lt;AlbumView&gt; = fetch!(ctx, {&gt;year}).await?;
+let _older: Vec&lt;AlbumView&gt; = fetch!(ctx, {&lt;year}).await?;
+let _gte: Vec&lt;AlbumView&gt; = fetch!(ctx, {&gt;=year}).await?;
+let _lte: Vec&lt;AlbumView&gt; = fetch!(ctx, {&lt;=year}).await?;
+let _not_eq: Vec&lt;AlbumView&gt; = fetch!(ctx, {!=year}).await?;</code></pre>
+
+Combine conditions with AND/OR:
+
+<pre><code transclude="example/server/src/main.rs#fetch-unquoted-combined">// Combine multiple conditions with AND/OR
+let artist = &quot;Prince&quot;;
+let year = 1985;
+
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, {artist} AND {&gt;year}).await?;</code></pre>
+
+Mix unquoted variables with explicit comparisons:
+
+<pre><code transclude="example/server/src/main.rs#fetch-unquoted-mixed">// Mix unquoted variables with explicit comparisons
+let artist = &quot;Prince&quot;;
+let year = 1985;
+
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, {artist} AND year &gt; {year}).await?;</code></pre>
+
+### Quoted Form
+
+Use quoted form for string literals and positional arguments:
+
+<pre><code transclude="example/server/src/main.rs#syntax-interpolate-str">// Quoted form with positional argument for string values
+let artist = &quot;Prince&quot;;
+
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;artist = &#39;{}&#39;&quot;, artist).await?;</code></pre>
 
 Multiple variables:
 
-<pre><code transclude="example/server/src/main.rs#syntax-interpolate-multi">let min_year = 1980;
+<pre><code transclude="example/server/src/main.rs#syntax-interpolate-multi">// Multiple variables with quoted form
+let min_year = 1980;
 let max_year = 1990;
-let query = format!(&quot;year &gt;= {min_year} AND year &lt;= {max_year}&quot;);
 
-let albums: Vec&lt;AlbumView&gt; = ctx.fetch(query.as_str()).await?;</code></pre>
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;year &gt;= {} AND year &lt;= {}&quot;, min_year, max_year).await?;</code></pre>
+
+Pure string literals (no variables):
+
+<pre><code transclude="example/server/src/main.rs#fetch-quoted-literal">// Quoted form for pure string literals
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;artist = &#39;Prince&#39; AND year &gt; 1985&quot;).await?;</code></pre>
 
 ## Common Patterns
 
 ### Check if entity exists
 
-<pre><code transclude="example/server/src/main.rs#syntax-exists">let exists = !ctx.fetch::&lt;AlbumView&gt;(&quot;name = &#39;Purple Rain&#39;&quot;).await?.is_empty();</code></pre>
+<pre><code transclude="example/server/src/main.rs#syntax-exists">// Check if any entities match the query
+let album_name = &quot;Purple Rain&quot;;
+let matching_albums = fetch!(ctx, &quot;name = &#39;{}&#39;&quot;, album_name).await?;
+let exists = matching_albums.len() &gt; 0;</code></pre>
 
 ### Get first match
 
