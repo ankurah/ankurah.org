@@ -162,7 +162,7 @@ let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;artist = &#39;Prince&#39; A
 
 <pre><code transclude="example/server/src/main.rs#syntax-exists">// Check if any entities match the query
 let album_name = &quot;Purple Rain&quot;;
-let matching_albums = fetch!(ctx, &quot;name = &#39;{}&#39;&quot;, album_name).await?;
+let matching_albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;name = &#39;{}&#39;&quot;, album_name).await?;
 let exists = matching_albums.len() &gt; 0;</code></pre>
 
 ### Get first match

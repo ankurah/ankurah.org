@@ -103,6 +103,7 @@ async fn fetch_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyh
     // Fetch with a string query - one-time snapshot
     let albums: Vec<AlbumView> = ctx.fetch("year > 1985").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=fetch-unquoted-eq
     // Unquoted form: {variable} expands to variable = {variable}
@@ -110,6 +111,7 @@ async fn fetch_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyh
 
     let albums: Vec<AlbumView> = fetch!(ctx, {artist}).await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=fetch-unquoted-gt
     // Unquoted form with comparison operator: {>year} expands to year > {year}
@@ -117,6 +119,7 @@ async fn fetch_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyh
 
     let albums: Vec<AlbumView> = fetch!(ctx, {>year}).await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=fetch-unquoted-comparisons
     // All comparison operators work: >, <, >=, <=, !=
@@ -136,6 +139,7 @@ async fn fetch_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyh
 
     let albums: Vec<AlbumView> = fetch!(ctx, {artist} AND {>year}).await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=fetch-unquoted-mixed
     // Mix unquoted variables with explicit comparisons
@@ -144,11 +148,13 @@ async fn fetch_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyh
 
     let albums: Vec<AlbumView> = fetch!(ctx, {artist} AND year > {year}).await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=fetch-quoted-literal
     // Quoted form for pure string literals
     let albums: Vec<AlbumView> = fetch!(ctx, "artist = 'Prince' AND year > 1985").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=fetch-quoted-positional
     // Quoted form with positional arguments
@@ -157,6 +163,7 @@ async fn fetch_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyh
 
     let albums: Vec<AlbumView> = fetch!(ctx, "year >= {} AND year <= {}", min_year, max_year).await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=fetch-quoted-mixed
     // Quoted form with named variable interpolation
@@ -165,8 +172,7 @@ async fn fetch_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyh
 
     let albums: Vec<AlbumView> = fetch!(ctx, "artist = '{}' AND year > {}", artist, year).await?;
     // liaison end
-
-    let _ = albums;
+    let _ = (albums, artist, year);
     Ok(())
 }
 
@@ -188,6 +194,7 @@ fn query_string_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
 
     let live: LiveQuery<AlbumView> = ctx.query(selection!({artist}))?;
     // liaison end
+    let _ = live;
 
     // liaison id=query-unquoted-gt
     // Unquoted form with comparison operator
@@ -195,6 +202,7 @@ fn query_string_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
 
     let live: LiveQuery<AlbumView> = ctx.query(selection!({>year}))?;
     // liaison end
+    let _ = live;
 
     // liaison id=query-unquoted-combined
     // Combine conditions with AND/OR
@@ -203,11 +211,13 @@ fn query_string_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
 
     let live: LiveQuery<AlbumView> = ctx.query(selection!({artist} AND {>year}))?;
     // liaison end
+    let _ = live;
 
     // liaison id=query-quoted-literal
     // Quoted form for string literals
     let live: LiveQuery<AlbumView> = ctx.query(selection!("artist = 'Prince' AND year > 1985"))?;
     // liaison end
+    let _ = live;
 
     // liaison id=query-quoted-positional
     // Quoted form with positional arguments
@@ -215,7 +225,6 @@ fn query_string_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
 
     let live: LiveQuery<AlbumView> = ctx.query(selection!("year > {}", year))?;
     // liaison end
-
     let _ = live;
     Ok(())
 }
@@ -231,50 +240,62 @@ async fn syntax_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
     // liaison id=syntax-string-eq
     let albums: Vec<AlbumView> = ctx.fetch("name = 'Dark Side of the Moon'").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-numeric
     let albums: Vec<AlbumView> = ctx.fetch("year > 1985").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-not-eq
     let albums: Vec<AlbumView> = ctx.fetch("artist != 'Unknown'").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-and
     let albums: Vec<AlbumView> = ctx.fetch("year > 1980 AND year < 1990").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-or
     let albums: Vec<AlbumView> = ctx.fetch("artist = 'Prince' OR artist = 'Madonna'").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-combined
     let albums: Vec<AlbumView> = ctx.fetch("(artist = 'Prince' OR artist = 'Madonna') AND year > 1985").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-in
     let albums: Vec<AlbumView> = ctx.fetch("year IN (1984, 1985, 1986)").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-order-desc
     let albums: Vec<AlbumView> = ctx.fetch("year > 1980 ORDER BY year DESC").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-order-asc
     let albums: Vec<AlbumView> = ctx.fetch("true ORDER BY name ASC").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-all
     let albums: Vec<AlbumView> = ctx.fetch("true ORDER BY name ASC").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-string-literal
     let albums: Vec<AlbumView> = ctx.fetch("name = 'Purple Rain'").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-escape-quote
     let albums: Vec<AlbumView> = ctx.fetch("name = 'Rock ''n'' Roll'").await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-interpolate-int
     // Unquoted form: {>year} expands to year > {year}
@@ -282,6 +303,7 @@ async fn syntax_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
 
     let albums: Vec<AlbumView> = fetch!(ctx, {>year}).await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-interpolate-str
     // Quoted form with positional argument for string values
@@ -289,6 +311,7 @@ async fn syntax_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
 
     let albums: Vec<AlbumView> = fetch!(ctx, "artist = '{}'", artist).await?;
     // liaison end
+    let _ = (albums, artist);
 
     // liaison id=syntax-interpolate-multi
     // Multiple variables with quoted form
@@ -297,6 +320,7 @@ async fn syntax_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
 
     let albums: Vec<AlbumView> = fetch!(ctx, "year >= {} AND year <= {}", min_year, max_year).await?;
     // liaison end
+    let _ = albums;
 
     // liaison id=syntax-exists
     // Check if any entities match the query
@@ -304,16 +328,17 @@ async fn syntax_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
     let matching_albums: Vec<AlbumView> = fetch!(ctx, "name = '{}'", album_name).await?;
     let exists = matching_albums.len() > 0;
     // liaison end
+    let _ = (exists, album_name);
 
     // liaison id=syntax-first
     let album = ctx.fetch::<AlbumView>("name = 'Purple Rain'").await?.into_iter().next();
     // liaison end
+    let _ = album;
 
     // liaison id=syntax-count
     let count = ctx.fetch::<AlbumView>("year > 1985").await?.len();
     // liaison end
-
-    let _ = (albums, exists, album, count);
+    let _ = count;
     Ok(())
 }
 
