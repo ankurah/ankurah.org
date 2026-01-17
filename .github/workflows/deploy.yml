@@ -42,8 +42,8 @@ jobs:
 
       - name: Install liaison
         run: |
-          curl -L -o /tmp/liaison https://github.com/dnorman/liaison/releases/download/v0.1.6/liaison
-          echo "f60bf3c863fe8de2bcd1e891bf10635b05676a2528f2a6fa9626141aca859e0a /tmp/liaison" | sha256sum -c
+          curl -L -o /tmp/liaison https://github.com/dnorman/liaison/releases/download/v0.2.0/liaison
+          echo "ac754c0032bbcd4560e215a614fdba84f35f0a2f988abad6e772825f1476a645 /tmp/liaison" | sha256sum -c
           chmod +x /tmp/liaison
           sudo mv /tmp/liaison /usr/local/bin/liaison
 

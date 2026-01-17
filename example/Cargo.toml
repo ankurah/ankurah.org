@@ -3,9 +3,9 @@ members = ["model", "server", "wasm-bindings"]
 resolver = "2"
 
 [workspace.dependencies]
-ankurah = "0.7.8"
-ankurah-signals = "0.7.8"
-ankql = "0.7.8"
+ankurah = "0.7.15"
+ankurah-signals = "0.7.15"
+ankql = "0.7.15"
 serde = { version = "1.0", features = ["derive"] }
 anyhow = "1.0"
 
