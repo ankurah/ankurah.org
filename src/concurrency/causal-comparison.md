@@ -77,7 +77,7 @@ parents already processed on a side are never re-added to that side's
 frontier. Budget becomes proportional to events fetched, and every
 bookkeeping structure can trust that it sees each (node, side) pair once.
 
-### Declaring StrictDescends: coverage plus grounding
+### Declaring StrictDescends: coverage plus a clean boundary
 
 The subject strictly descends the comparison when the subject's traversal has
 seen every comparison head. That is *cover containment*: everything the
@@ -85,23 +85,33 @@ comparison knows is inside what the subject knows.
 
 But `StrictDescends` drives adoption: the receiver fast-forwards its head to
 the subject clock wholesale. Cover containment alone is not a safe basis for
-that. The `[B, X]` shape above can also arise mid-traversal, with the foreign
-root discovered too late to matter to a naive coverage check. So the
-completion requires, additionally, that every subject head is **grounded**:
-its ancestry intersects the comparison's ancestry somewhere.
+that, because a subject can smuggle a foreign lineage in two ways. The
+`[B, X]` clock above juxtaposes an extra head; a single **graft event** does
+it more subtly, with one event whose parent clock joins a legitimate
+ancestor line with an independent genesis root. Both shapes cover the
+comparison via their honest component while importing unrelated history.
 
-The subtlety is what grounding must *not* require. A subject head may be a
-*sibling* of a comparison head rather than its descendant. If the local head
-is `[J]` and an incoming state carries head `[F, J]`, where `F` and `J` are
-concurrent children of the same creation event, then `F` never reaches `J`
-walking backward. It reaches their common ancestor. That state genuinely
-contains everything the local node has, and adopting it is correct. So
-grounding is defined as *shared lineage* (ancestry intersection), not
-*reaches a comparison head*. Foreign roots fail it; sibling tips pass it.
+So the completion requires, additionally, that the subject's **exploration
+boundary** lies entirely within the comparison's ancestry: every genesis
+root the subject traversal has discovered, and every id still on its
+frontier (the undiscovered remainder), must be part of the comparison's
+lineage. A foreign root fails the first test the moment it is discovered; a
+deep foreign line keeps failing the second until its root surfaces.
 
-An ungrounded subject never fast-forwards. The traversal simply continues to
-exhaustion and reports the honest diverged verdict, which routes the foreign
-line through the merge machinery instead of adopting it blind.
+Honest shapes fire exactly when they used to. A deep linear extension
+completes with its unexplored remainder sitting below the comparison
+surface, which is inside the comparison's ancestry. And a subject head may
+be a *sibling* of a comparison head rather than its descendant: if the local
+head is `[J]` and an incoming state carries head `[F, J]`, where `F` and `J`
+are concurrent children of the same creation event, `F`'s walk bottoms out
+at their shared ancestor, inside the comparison's ancestry. That state
+genuinely contains everything the local node has, and adopting it is
+correct.
+
+A subject with a dirty boundary never fast-forwards. The traversal simply
+continues to exhaustion and reports the honest diverged verdict, which
+routes the foreign line through the merge machinery instead of adopting it
+blind.
 
 `StrictAscends` (the mirror direction) deliberately stays cover-only: it
 drives *skip this incoming event*, and for skipping, knowing that the local
