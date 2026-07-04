@@ -117,18 +117,18 @@ common, the candidate is an ancestor of shared history, not its edge; the
 final meet is the set of common nodes with no common children. In other
 words, the maximal antichain of the common region.
 
-One more piece of bookkeeping guards the verdict's honesty. Each comparison
-head must be *accounted for*: its backward walk must actually reach shared
-history. Heads are retired from an outstanding set as their traversals touch
-common ground, and at exhaustion any survivors are checked by direct
-reachability over everything the traversal recorded: a head is genuinely
-outstanding only if no common node is reachable from it. A head that remains
-outstanding means part of the comparison clock shares nothing with the
-subject, and the verdict degrades to a diverged result with an empty meet
-rather than inventing a partial one. The reachability pass exists because
-incremental retirement alone is provably insufficient: an origin marker can
-arrive at a node after that node has already been expanded, and with
-re-expansion now deduplicated, nothing would ever carry it forward.
+One more check guards the verdict's honesty. Each comparison head must be
+*accounted for*: some common node must be reachable backward from it. This is
+asked once, at exhaustion, by direct reachability over everything the
+traversal recorded, which is complete for both walks by then. A head that
+reaches no common node means part of the comparison clock shares nothing with
+the subject, and the verdict degrades to a diverged result with an empty meet
+rather than inventing a partial one. An earlier design propagated per-head
+origin markers through the walk and retired heads incrementally; that scheme
+is provably insufficient once re-expansion is deduplicated (a marker arriving
+at an already-expanded node is never carried forward), which is why the
+implementation asks the reachability question directly instead of maintaining
+running state.
 
 ## Disjoint detection
 
