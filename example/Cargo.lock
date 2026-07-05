@@ -12,6 +12,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "allocator-api2"
+version = "0.2.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
+
+[[package]]
 name = "android_system_properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -22,9 +28,9 @@ dependencies = [
 
 [[package]]
 name = "ankql"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b645b8d1c3430ed1f23158edf404a83a0b9a2f354139af14aa245fa583275b99"
+checksum = "28b87ef060933fa1e0f9b1743ce44476f19e814d914531bf8054679cdeaa586e"
 dependencies = [
  "base64",
  "log",
@@ -40,9 +46,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ecb19aabfedca30bf28de301b3a4936ed030a8ed728ba3debffa3eb8a92fb9f"
+checksum = "a04b9190681d76dd66da250a97eee1ea0567e413592ff637219e7a64bbe74475"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -60,9 +66,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-core"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dc9cbd9349118911e540c945e66837489d987af8179d6ab24f7f764244248f7"
+checksum = "7d62424f211f43ddcc32cb0a4ab87ce5b4134faadec551676339142ec54804e4"
 dependencies = [
  "ankql",
  "ankurah-derive",
@@ -81,6 +87,7 @@ dependencies = [
  "indexmap",
  "itertools",
  "js-sys",
+ "lru",
  "rand 0.8.5",
  "send_wrapper 0.6.0",
  "serde",
@@ -98,9 +105,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-derive"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9180095d0c8d2a8ae174996f06053feba48dd350e951403cf881f50f320963f"
+checksum = "ae50730db74ff36b0f12445f0180d624c798dd2f6975cc68b26e4d5359cf428e"
 dependencies = [
  "ankql",
  "proc-macro2",
@@ -158,9 +165,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-proto"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "802b7518f589394e91c48a8d77f297c1dcf3b49d92f8c3af7b15a086a92c1842"
+checksum = "6e20993c24a32f92bf7c070a4739017ee6548ae106fc3090558f95d511209059"
 dependencies = [
  "ankql",
  "anyhow",
@@ -182,9 +189,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-signals"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20dff5f00d1b6126b4914615bde35278a964dd32a53991c42c3c837cd1d30295"
+checksum = "db01915a094f86bac79159c2fd6bfa07e98f0e549c43fee8c8150addcdacd4ee"
 dependencies = [
  "js-sys",
  "reactive_graph",
@@ -197,9 +204,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-storage-common"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1589a15ff32abc97c266fb3773834a830513ca08360e0cf351173a164afee72"
+checksum = "5c0c2ac60a334e894d5230180eed6b9b4954055105e681302c249276ab084d28"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -212,9 +219,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-storage-indexeddb-wasm"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1737a2404bea289f4d937dbae65089106a79fc0732f228693b99972cb0d96136"
+checksum = "81eb4be3c9c17a960c4e69771a96ff48c628145022a6864c7791d041d195d432"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -248,9 +255,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-storage-postgres"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09e862341c833be26b0be677c0f33543939700e52361e668f1144063dc1d8666"
+checksum = "49fd2f44c1501c89d9bc13fdff47cd4d6f3db708dd0492d504060a0f1fea5856"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -272,9 +279,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-storage-sled"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "548d83f6f69df7f832d6d1d78caffe61cc589a42978b68b18b8772bcf0ce3d2f"
+checksum = "07c296db532e89fb9e35fbe55b495920895a3749ec714e66a5955b32a98f5c12"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -297,9 +304,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-websocket-client"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b2c5f8286481bda183d68e0ad5796b4c816c1c7cdbe68a4867c5fa01bec0bfe"
+checksum = "b7be9154358149f22716469a8c2a6b8a2b5756c5a511ee23c5fb9b16b649276e"
 dependencies = [
  "ankurah-core",
  "ankurah-proto",
@@ -319,9 +326,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-websocket-client-wasm"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4b7ad99587410e1a657e87f38980fe7429a44b9d3617a8424ffb2747b2cc4b5"
+checksum = "07f4f39e793eb665649a12b2a1bdf9747472444e2c9d3df6da002f07df46d1e0"
 dependencies = [
  "ankurah",
  "ankurah-core",
@@ -351,9 +358,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-websocket-server"
-version = "0.7.15"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe8bdbab909edfba9dc13872146f712844eca0998326a07fd65622ed314fe78e"
+checksum = "4e9ee25217ecdf47b1aa9ebe65c2b939f46d74e7c72010b19d49d014896c4f44"
 dependencies = [
  "ankurah-core",
  "ankurah-proto",
@@ -886,6 +893,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a3076410a55c90011c298b04d0cfa770b00fa04e1e3c97d3f6c9de105a03844"
 
 [[package]]
+name = "foldhash"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
+
+[[package]]
 name = "foreign-types"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1137,6 +1150,17 @@ name = "hashbrown"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
+
+[[package]]
+name = "hashbrown"
+version = "0.15.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
+dependencies = [
+ "allocator-api2",
+ "equivalent",
+ "foldhash",
+]
 
 [[package]]
 name = "hashbrown"
@@ -1484,6 +1508,15 @@ name = "log"
 version = "0.4.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
+
+[[package]]
+name = "lru"
+version = "0.12.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "234cf4f4a04dc1f57e24b96cc0cd600cf2af460d4161ac5ecdd0af8e1f3b2a38"
+dependencies = [
+ "hashbrown 0.15.5",
+]
 
 [[package]]
 name = "matchit"
