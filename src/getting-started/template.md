@@ -1,44 +1,29 @@
 # Quick Start (Template)
 
-The fastest way to a running Ankurah app is a template with
-[`cargo-generate`](https://github.com/cargo-generate/cargo-generate). Two are
-available today — pick your frontend:
+Generate a new Ankurah app with
+[`cargo-generate`](https://github.com/cargo-generate/cargo-generate) — pick your
+frontend:
 
-## React
+- **Leptos** — `cargo generate https://github.com/ankurah/leptos-template`
+- **React** — `cargo generate https://github.com/ankurah/react-template`
 
-```bash
-cargo generate https://github.com/ankurah/react-template
-```
+Both scaffold the same Rust server and models with a live-syncing chat UI and
+differ only in the frontend. The durable node uses the **Sled** storage engine
+by default.
 
-A Rust server (Sled storage) with a React + TypeScript frontend: WASM bindings,
-WebSocket sync between client and server, and example models and UI components.
-
-## Leptos
-
-```bash
-cargo generate https://github.com/ankurah/leptos-template
-```
-
-The same chat app in Leptos (Rust → WASM, trunk/CSR): reactive live queries
-wired through `ankurah-signals`' reactive-graph integration, with
-virtual-scrolled message lists.
-
-Both templates share the same Rust model and server, so you can start from
-whichever frontend you prefer.
+> A **Postgres** storage option — the durable node backed by a Postgres
+> container — is on the way.
 
 ## Run it
-
-After generating your project:
 
 ```bash
 cd your-project-name
 ./dev.sh
 ```
 
-`dev.sh` builds the Rust server and the frontend and starts everything on
-randomized local ports (to avoid collisions) — it prints the URL to open on
-startup. Stop it with `./dev.sh --stop` (see `./dev.sh --help` for `--status`,
-`--logs`, and `--restart`).
+`dev.sh` builds the server and frontend and starts them on randomized local
+ports — open the URL it prints. Stop with `./dev.sh --stop` (`--status`,
+`--logs`, and `--restart` are also available).
 
 To see real-time synchronization in action, open the app in one regular browser
 tab and one incognito tab: the incognito tab gets its own IndexedDB store, so
