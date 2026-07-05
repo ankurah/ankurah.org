@@ -1,41 +1,9 @@
-# Getting Started
+# Manual Setup
 
-There are two ways to get started with Ankurah: using a template or setting up manually.
-
-## Starting from a Template
-
-The quickest way to get started is to use our React + Sled template with `cargo-generate`:
-
-```bash
-cargo generate https://github.com/ankurah/react-sled-template
-```
-
-This will create a new project with:
-
-- A Rust server using the Sled storage backend
-- A React frontend with TypeScript
-- WASM bindings pre-configured
-- WebSocket communication between client and server
-- Example models and UI components
-
-After generating your project:
-
-```bash
-cd your-project-name
-./dev.sh
-```
-
-This starts watchers for the Rust server, wasm-bindings, and React app. Open your browser to `http://localhost:5173`. Press Ctrl+C to stop and all watchers will exit cleanly.
-
-> **Tip**: More templates will be added soon for different use cases!
->
-> **Need help?** Join the [Ankurah Discord](https://discord.gg/XMUUxsbT5S)!
-
----
-
-## Manual Setup
-
-If you want to set up Ankurah from scratch, follow these steps:
+Most projects should start from the [template](template.md). Use this path
+if you cannot, or if you want to see every moving part: it runs the example
+apps from the [ankurah repository](https://github.com/ankurah/ankurah)
+directly.
 
 ### Prerequisites
 
@@ -124,12 +92,12 @@ In the example setup:
 
 - The **"server"** process is a native Rust process whose node is flagged as **"durable"**, meaning that it attests it will not lose data.
 - The **"client"** process is a WASM process that is also durable in some sense, but not to be relied upon to have all data.
-- The demo server currently uses the **Sled** backend, but **Postgres** is also supported, and **TiKV** support is planned.
+- The demo server currently uses the **Sled** backend; **Postgres**, **SQLite**, and (in the browser) **IndexedDB** are also supported.
 - WebSocket connections enable real-time bi-directional communication between nodes.
 
 ## Next Steps
 
-- Check out the [Examples](examples.md) page for more code samples
-- Learn about the [Architecture](architecture.md) to understand how Ankurah works
-- Read the [Glossary](glossary.md) to understand key terminology
+- Check out the [Examples](../examples.md) page for more code samples
+- Learn [how Ankurah works](../architecture.md) under the hood
+- Read the [Glossary](../glossary.md) to understand key terminology
 - Join the [Discord](https://discord.gg/XMUUxsbT5S) to ask questions and share your projects!

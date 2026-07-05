@@ -120,5 +120,5 @@ let live: LiveQuery&lt;AlbumView&gt; = ctx.query(selection!(&quot;artist = &#39;
 ## Next Steps
 
 - [Query Syntax](syntax.md) - Learn the full AnkQL query language
-- [React Usage](react.md) - Using queries in React components
+- [React Bindings](../reactivity/react.md) - Using queries in React components
 

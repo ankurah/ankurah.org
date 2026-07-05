@@ -1,11 +1,17 @@
-# Property Backends
+# Choosing a Merge Strategy (LWW vs Yrs)
 
-Everything so far decided *which* events apply and in *what order*. Property
-backends decide what those events mean for actual data. Each entity property
-belongs to exactly one backend, each backend owns its own operation format,
-and the layer machinery guarantees backends a simple world: you will receive
-groups of events; within a group, all events are mutually concurrent; groups
-arrive parents-first.
+Every field in a model has a **merge strategy**: the rule that decides what
+happens when two nodes change that field concurrently. Picking one is a
+modeling decision you make per field, at definition time, and it is worth a
+moment of thought -- "one writer wins" and "both edits interleave" are very
+different user experiences.
+
+Under the hood each strategy is a **property backend**: the component that
+owns a property's operation format and implements its merge policy. This
+page covers the two shipped backends and how to choose between them; the
+[engine-facing contract](../internals/property-backends.md) and the
+[full resolution algorithm](../internals/lww-merge.md) live in the
+contributor Internals section.
 
 ## The active backends
 

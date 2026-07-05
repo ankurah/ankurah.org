@@ -176,4 +176,4 @@ let exists = matching_albums.len() &gt; 0;</code></pre>
 ## Next Steps
 
 - [Querying Data](index.md) - Overview of fetch vs query
-- [React Usage](react.md) - Using queries in React components
+- [React Bindings](../reactivity/react.md) - Using queries in React components

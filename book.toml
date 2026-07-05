@@ -14,6 +14,7 @@ preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/ankurah/ankurah"
 edit-url-template = "https://github.com/ankurah/ankurah/edit/main/{path}"
 site-url = "/"
+additional-js = ["mermaid.min.js", "mermaid-init.js"]
 
 [output.html.search]
 enable = true
@@ -35,6 +36,14 @@ enable = true
 level = 0
 
 [preprocessor.links]
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+[output.html.redirect]
+"/getting-started.html" = "getting-started/template.html"
+"/queries/react.html" = "../reactivity/react.html"
+"/concurrency/property-backends.html" = "../models/merge-strategy.html"
 
 [output.html.print]
 enable = true

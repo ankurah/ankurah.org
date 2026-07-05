@@ -50,8 +50,8 @@ where events come from:
 |--------|----------------|
 | `comparison.rs` | The backward BFS state machine and the quick check |
 | `frontier.rs` | The frontier set abstraction |
-| `accumulator.rs` | `EventAccumulator` (recorded DAG + LRU event cache), `ComparisonResult`, and `EventLayers` (the forward layer iterator) |
-| `layers.rs` | The per-layer causal relation used by backends |
+| `accumulator.rs` | `EventAccumulator` (recorded DAG + LRU event cache), `ComparisonResult`, and the DAG-walk helpers |
+| `layers.rs` | `EventLayers` (the forward layer iterator), `EventLayer`, and the per-layer causal relation used by backends |
 | `ordering.rs` | Topological sorting of event batches (Kahn's) |
 | `relation.rs` | The `AbstractCausalRelation` verdict type |
 

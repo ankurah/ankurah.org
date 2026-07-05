@@ -179,7 +179,7 @@ where each emission is a **layer** of mutually concurrent events.
 Each layer is split into `already_applied` (events the local head already
 incorporates, provided as context) and `to_apply` (new work). Property
 backends receive whole layers and resolve concurrency within them; the
-[property backends chapter](property-backends.md) covers exactly how.
+[property backends chapter](../internals/property-backends.md) covers exactly how.
 
 ## The third: ordering event batches
 

@@ -145,6 +145,7 @@ export const RoomList = signalObserver(({ selectedRoom }) => {
 
 ## Next Steps
 
-- [Querying Data](index.md) - Overview of fetch vs query
-- [Query Syntax](syntax.md) - Full AnkQL syntax reference
+- [Reactivity & Signals](index.md) - The signals model behind these hooks
+- [Querying Data](../queries/index.md) - Overview of fetch vs query
+- [Query Syntax](../queries/syntax.md) - Full AnkQL syntax reference
 

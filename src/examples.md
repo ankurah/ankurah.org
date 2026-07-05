@@ -55,7 +55,7 @@ const AlbumList = signalObserver(({ albums }: Props) =&gt; {
   );
 });</code></pre>
 
-See [React Usage](queries/react.md) for full documentation.
+See [React Bindings](reactivity/react.md) for full documentation.
 
 ## Live Query
 
@@ -137,7 +137,7 @@ let storage = IndexedDBStorageEngine::new("my-app").await?;
 
 ## Next Steps
 
-- Check out the [Getting Started](getting-started.md) guide for step-by-step setup
+- Check out the [Quick Start](getting-started/template.md) guide for step-by-step setup
 - Review the [Glossary](glossary.md) to understand key terms
 - Study the [Architecture](architecture.md) to see how it all fits together
 - Join the [Discord](https://discord.gg/XMUUxsbT5S) to discuss your use case!

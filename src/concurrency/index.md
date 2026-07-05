@@ -5,12 +5,14 @@ central lock and no requirement that anyone is online. A phone can edit an
 album while a server processes an import job touching the same record; both
 edits survive, and every node ends up with the same state.
 
-This chapter builds the mental model. The chapters after it descend into the
-machinery: first the [comparison algorithm](causal-comparison.md) that
-classifies incoming changes, then the [anatomy of the engine](factorization.md)
-(how the code is factored and what each layer guarantees), and finally the
-[property backends](property-backends.md) that decide what "merging" means for
-each field.
+This chapter builds the mental model, and
+[Conflict Resolution & Guarantees](guarantees.md) states the resulting
+contract. What "merging" means for each field is a modeling choice you make
+per field -- see [Choosing a Merge Strategy](../models/merge-strategy.md).
+The machinery itself lives in the contributor Internals section: the
+[comparison algorithm](causal-comparison.md) that classifies incoming
+changes, the [anatomy of the engine](factorization.md), and the
+engine-facing [property backends](../internals/property-backends.md).
 
 ## Events form a DAG
 
@@ -114,10 +116,11 @@ The concurrency system is built to keep a small set of promises:
 
 ## Where to go next
 
-- [Causal Comparison: Frontiers and Meets](causal-comparison.md) explains how
-  the six relations are actually computed, including the failure shapes the
-  algorithm is designed against.
-- [Anatomy of the Engine](factorization.md) maps the code: which crate and
-  module owns each responsibility, and the invariants at each seam.
-- [Property Backends](property-backends.md) covers the backend contract and
-  the specifics of LWW and Yrs resolution.
+- [Conflict Resolution & Guarantees](guarantees.md) states the contract all
+  of this machinery upholds, and what is deliberately not promised.
+- [Choosing a Merge Strategy](../models/merge-strategy.md) covers the
+  per-field LWW-vs-Yrs decision from the modeling side.
+- In the contributor Internals section,
+  [Causal Comparison: Frontiers and Meets](causal-comparison.md) explains how
+  the six relations are actually computed, and
+  [Anatomy of the Engine](factorization.md) maps the code.

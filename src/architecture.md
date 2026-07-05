@@ -1,94 +1,87 @@
-# Architecture
+# How Ankurah Works
 
-Ankurah is built on a distributed, event-sourced architecture that enables real-time data synchronization across multiple nodes.
+One screen, whole system: Ankurah is a distributed, event-sourced state
+framework. Applications talk to a local **Node**; nodes persist entity
+state and immutable events through pluggable storage engines and
+synchronize with each other over connectors. Everything else in this book
+hangs off this map.
 
-## High-Level Overview
+```mermaid
+flowchart LR
+    subgraph client["Ephemeral Node (browser / WASM)"]
+        direction TB
+        app["Applications<br/>(React / Leptos bindings)"]
+        cnode["Node<br/>Context · Reactor / LiveQueries · Policy"]
+        ceng["Storage Engine Layer"]
+        cidb[("IndexedDB<br/>entity state + events")]
+        app --> cnode
+        cnode --> ceng
+        ceng --> cidb
+    end
 
-The following interactive diagram shows the key components and data flow in an Ankurah system:
+    subgraph server["Durable Node (server)"]
+        direction TB
+        snode["Node<br/>Context · Reactor / LiveQueries · Policy"]
+        seng["Storage Engine Layer"]
+        sstore[("sled / Postgres / SQLite<br/>entity state + events")]
+        snode --> seng
+        seng --> sstore
+    end
 
-<div style="text-align: center; margin: 2rem 0;">
-<iframe width="768" height="496" src="https://miro.com/app/live-embed/uXjVJszJ8-8=/?focusWidget=3458764647841903532&embedMode=view_only_without_ui&embedId=113557891403" frameborder="0" scrolling="no" allow="fullscreen; clipboard-read; clipboard-write" allowfullscreen></iframe>
-</div>
-
-## Key Architectural Components
-
-### Node
-
-A **Node** is the fundamental unit in Ankurah. Each node can:
-
-- Store data using a pluggable storage backend
-- Subscribe to changes from other nodes
-- Publish changes to subscribed nodes
-- Maintain its own view of entity state
-
-### Storage Backends
-
-Ankurah supports multiple storage backends:
-
-- **Sled**: Embedded key-value store, great for development and embedded applications
-- **Postgres**: Production-grade relational database backend
-- **IndexedDB** (WASM): Browser-based storage for client applications
-- **TiKV** (planned): Distributed transactional key-value database
-
-### Event Sourcing
-
-All changes in Ankurah are represented as immutable events:
-
-- Each event has a unique ID (ULID) for distributed generation
-- Events reference their precursor events, forming a directed acyclic graph (DAG)
-- Entity state is derived from applying events in order
-- The "present" state includes the "head" operations of the event tree
-
-### Subscriptions
-
-Nodes can subscribe to changes using SQL-like queries:
-
-```rust,ignore
-let livequery = context.query::<AlbumView>(
-    "name LIKE 'Origin%' AND year > '2000'"
-).await?;
+    client <-->|"WebSocket connector<br/>(replication)"| server
 ```
 
-The subscription system uses:
+The client (ephemeral) node holds a cache in the browser, while the durable node
+is the source of truth on the server. Both run the same `Node` core -- a
+`Context` for scoped access, a `Reactor` driving live queries, and a policy
+agent -- and both persist entity state snapshots alongside the immutable events
+behind them through the storage engine layer. Ephemeral and durable nodes
+synchronize over a WebSocket connector.
 
-- **Content filtering**: Only matching entities trigger callbacks
-- **Real-time updates**: Changes propagate immediately
-- **Efficient indexing**: Queries are optimized using available indexes
+## The pieces
 
-### Reactive Runtime
+**Node** -- the fundamental unit. Every process embeds one: it holds entity
+state, evaluates queries, runs policy, and replicates with peers. Durable
+nodes (servers) keep the full event history; ephemeral nodes (browsers)
+hold a synchronized working set and fetch history on demand. Details:
+[Node Architecture and Replication](internals/node-architecture.md).
 
-Ankurah includes a reactive runtime (Reactor) that:
+**Events and the DAG** -- every change is an immutable event whose id is a
+content hash of the event and its parent references. Per entity, events
+form a DAG like a git history; the entity's current state points at the
+DAG's head, and concurrent branches merge deterministically, field by
+field. Narrative: [How Ankurah Handles Concurrency](concurrency/index.md);
+contract: [Conflict Resolution & Guarantees](concurrency/guarantees.md).
 
-- Tracks dependencies between entities
-- Propagates changes through the dependency graph
-- Enables derived/computed values
-- Powers the signal-based observability pattern
+**Live queries and reactivity** -- applications read through one-shot
+`fetch()` or subscribe with `query()`, which returns a `LiveQuery` that
+updates as matching entities change anywhere in the system. A reactor per
+node matches committed changes against active subscriptions and drives the
+signal graph your UI observes. Usage: [Querying Data](queries/index.md)
+and [React Bindings](reactivity/react.md).
 
-## Communication Patterns
+**Storage engines** -- every node writes through a pluggable storage
+engine that persists two things per collection: entity state snapshots
+(the materialized current view) and the immutable events behind them. The
+same two traits back Sled, Postgres, SQLite, and browser IndexedDB, with
+shared query-planning machinery so each engine implements placement and
+I/O rather than reinventing predicate handling. Details:
+[Storage Engine Layer](internals/storage-engines.md).
 
-### Client-Server
+**Connectors** -- nodes synchronize over WebSocket connectors today
+(server and native/WASM clients), carrying subscriptions, deltas, and
+event batches. Direct peer-to-peer connections and end-to-end encryption
+are roadmap items -- see [Design Goals](design-goals.md).
 
-- WebSocket-based bidirectional communication
-- Automatic reconnection and synchronization
-- Delta-based updates for efficiency
+## The write path, end to end
 
-### Peer-to-Peer (Planned)
-
-Future versions will support:
-
-- Direct peer-to-peer connections
-- Mesh networking
-- Cryptographic identities
-- End-to-end encryption
-
-## Data Flow
-
-1. **Create/Update**: A node creates or updates an entity
-2. **Event Generation**: An immutable event is generated and stored
-3. **Local Application**: The event is applied to the local node's state
-4. **Subscription Matching**: The reactor checks which subscriptions match
-5. **Propagation**: Matching events are sent to subscribed nodes
-6. **Remote Application**: Remote nodes receive and apply the event
+A local commit generates events, applies them to local state, and persists
+them; the reactor matches the change against active subscriptions; matching
+peers receive the events and apply them through exactly the same
+integration path as local writes. One code path, local or remote -- that
+symmetry is what makes offline writes, re-deliveries, and concurrent edits
+all resolve uniformly. The full trace lives in
+[The Compare-Apply Cycle](internals/compare-apply-cycle.md).
 
 ## Consistency Model
 

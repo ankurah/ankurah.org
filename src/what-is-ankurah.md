@@ -12,7 +12,7 @@ It supports multiple storage and data type backends to enable no-compromise repr
 - **Content-filtered pub/sub**: Subscribe to changes on a collection using a SQL-like query
 - **Real-Time Observability**: Signal-based pattern for tracking entity changes
 - **Distributed Architecture**: Multi-node synchronization with event sourcing
-- **Flexible Storage**: Support for multiple storage backends (Sled, Postgres, TiKV)
+- **Flexible Storage**: Support for multiple storage backends (Sled, SQLite, Postgres, IndexedDB in the browser)
 - **Isomorphic code**: Server applications and Web applications use the same code, including first-class support for React and Leptos out of the box
 
 ## Core Concepts
@@ -28,30 +28,34 @@ It supports multiple storage and data type backends to enable no-compromise repr
 
 Ankurah follows an event-sourced architecture where:
 
-- All operations have unique IDs and precursor operations
-- Entity state is maintained per node with operation tree tracking
-- Operations use ULID for distributed ID generation
-- Entity IDs are derived from their creation operation
+- Every change is an immutable **event** whose id is a content hash of the
+  event and the parent events it was built on
+- Events form a per-entity DAG (like a git history); an entity's current
+  state points at the DAG's **head**
+- Entity ids are ULIDs, generated on any node without coordination
+- Concurrent changes merge deterministically: causally newer writes win, and
+  truly concurrent writes resolve by a stable tiebreak every node computes
+  identically -- see [Conflict Resolution & Guarantees](concurrency/guarantees.md)
 
 ## Quick Example
 
 ```rust,ignore
-// Subscribe to changes on the client
-let subscription = client.subscribe::<_,_,AlbumView>(
-    "name = 'Origin of Symmetry'",
-    |changes| {
-        println!("Received changes: {}", changes);
-    }
-).await?;
+// A live query on one node: results update automatically as
+// matching data changes anywhere in the system
+let live: LiveQuery<AlbumView> = ctx.query(selection!("name = 'Origin of Symmetry'"))?;
 
-// Create a new album on the server
-let trx = server.begin();
-let album = trx.create(&Album {
+// Create a matching album on another node -- connected peers converge in real time
+let trx = ctx.begin();
+trx.create(&Album {
     name: "Origin of Symmetry".into(),
-    year: "2001".into(),
+    artist: "Muse".into(),
+    year: 2001,
 }).await?;
 trx.commit().await?;
 ```
+
+See [Querying Data](queries/index.md) for the full query API, including the
+one-shot `fetch()` form and the `fetch!`/`selection!` macros.
 
 ## Community
 
