@@ -16,6 +16,7 @@
 - [Reactivity & Signals](reactivity/index.md)
 - [React Bindings](reactivity/react.md)
 - [Authentication & Policy](guides/auth.md)
+- [Deployment & Operations](guides/deployment.md)
 
 # How It Works
 
