@@ -17,7 +17,7 @@ arrive parents-first.
 Model fields choose their backend at definition time. String fields default
 to Yrs text; a field can opt into LWW explicitly:
 
-```rust
+```rust,ignore
 #[derive(Model, Debug, Serialize, Deserialize)]
 pub struct Record {
     #[active_type(LWW)]

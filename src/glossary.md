@@ -8,7 +8,7 @@ This glossary defines key terms and concepts used throughout Ankurah.
 
 A struct that describes the fields and their types for an entity in a collection. Models define the data binding schema and generate View and Mutable types.
 
-```rust
+```rust,ignore
 #[derive(Model)]
 struct Album {
     name: String,
@@ -29,7 +29,7 @@ A discrete identity in a collection similar to a row in a database. Each entity 
 
 A struct that represents the read-only view of an entity which is typed by the Model. Views provide type-safe access to entity properties without allowing mutations.
 
-```rust
+```rust,ignore
 let album: AlbumView = entity.view()?;
 println!("Album: {} ({})", album.name, album.year);
 ```
@@ -38,7 +38,7 @@ println!("Album: {} ({})", album.name, album.year);
 
 A struct that represents the mutable state of an entity which is typed by the Model. Mutables allow type-safe modifications to entity properties.
 
-```rust
+```rust,ignore
 let mut album: AlbumMutable = entity.mutable()?;
 album.name.set("New Album Name");
 ```
@@ -86,7 +86,7 @@ A unit of work that groups multiple operations. Transactions provide:
 - Isolation: Operations are isolated from other transactions
 - Consistency: Database constraints are maintained
 
-```rust
+```rust,ignore
 let trx = node.begin();
 let entity = trx.create(&Album { /* ... */ }).await?;
 trx.commit().await?;
@@ -96,7 +96,7 @@ trx.commit().await?;
 
 A live query that receives updates when matching entities change. Subscriptions use SQL-like predicates for filtering.
 
-```rust
+```rust,ignore
 node.subscribe::<_,_,AlbumView>("year > '2000'", |changes| {
     // Handle changes
 }).await?;
@@ -160,7 +160,7 @@ A component that controls access to operations. Agents decide:
 
 A wrapper around a Node that includes user/session information (ContextData). Operations performed through a Context are subject to policy checks.
 
-```rust
+```rust,ignore
 let context = node.context(user_data)?;
 let album = context.create(&Album { /* ... */ }).await?;
 ```

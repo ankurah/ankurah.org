@@ -43,7 +43,7 @@ All changes in Ankurah are represented as immutable events:
 
 Nodes can subscribe to changes using SQL-like queries:
 
-```rust
+```rust,ignore
 let livequery = context.query::<AlbumView>(
     "name LIKE 'Origin%' AND year > '2000'"
 ).await?;

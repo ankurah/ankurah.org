@@ -13,7 +13,7 @@ Ankurah is designed with specific goals in mind to create a powerful, flexible, 
 
 **Example:**
 
-```rust
+```rust,ignore
 #[derive(Model)]
 struct Album {
     name: String,

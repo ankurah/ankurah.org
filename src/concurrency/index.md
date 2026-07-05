@@ -21,11 +21,9 @@ Every change in Ankurah is an immutable **event**. An event records:
 - a **parent clock**: the ids of the event(s) it was built on top of.
 
 An event's id is a content hash of all of that. Ids are therefore
-self-verifying, collision-free in practice, and impossible to arrange into a
-cycle: you cannot reference an event that does not exist yet.
-
-Parent references link events into a directed acyclic graph, much like a git
-commit graph. History is usually a straight line:
+self-verifying and collision-free in practice. Together, the parent
+references form a directed acyclic graph, much like a git commit graph.
+History is usually a straight line:
 
 ```text
 A <- B <- C          (C's parent is B, B's parent is A)
@@ -102,7 +100,7 @@ The concurrency system is built to keep a small set of promises:
    regardless of arrival order. Comparison verdicts and merge results depend
    only on the graph, never on timing. A randomized property test checks the
    comparison verdicts against a brute-force reachability oracle across
-   thousands of generated graphs.
+   hundreds of generated DAGs and many more clock comparisons.
 2. **No silent loss.** A write that reached the graph is never dropped by
    ordering accidents. Batches of events are topologically sorted before
    application on the receiving side, so a child can never sneak in ahead of

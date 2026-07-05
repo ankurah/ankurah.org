@@ -131,10 +131,11 @@ real entity with no state.
 `core/src/node_applier.rs` translates each wire payload shape into the
 correct application sequence, and owns batch semantics:
 
-- **`EventOnly`**: stage all events, then apply and commit each in order.
-- **`StateAndEvent`**: try `apply_state`; if the state cannot be adopted,
-  fall back to per-event application (which handles both divergence and
-  stale-state cases).
+- **`EventOnly`**: stage all events, topologically sort the batch, then
+  apply and commit parents-first.
+- **`StateAndEvent`**: stage and sort the events, try `apply_state`, and
+  fall back to parents-first event application if the state cannot be
+  adopted (which handles both divergence and stale-state cases).
 - **`StateSnapshot`**: state only, for fetch responses.
 - **`EventBridge`**: stage everything, topologically sort, then apply
   parents-first. Wire order is untrusted by design; the sender also sorts,

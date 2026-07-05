@@ -35,7 +35,7 @@ Ankurah follows an event-sourced architecture where:
 
 ## Quick Example
 
-```rust
+```rust,ignore
 // Subscribe to changes on the client
 let subscription = client.subscribe::<_,_,AlbumView>(
     "name = 'Origin of Symmetry'",

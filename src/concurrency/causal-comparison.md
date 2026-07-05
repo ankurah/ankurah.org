@@ -2,7 +2,7 @@
 
 Everything in the previous chapter reduces to one function:
 
-```rust
+```text
 compare(event_getter, subject, comparison, budget) -> CausalRelation
 ```
 
@@ -185,8 +185,9 @@ backends receive whole layers and resolve concurrency within them; the
 
 When a peer needs to catch a node up across many events (an **EventBridge**),
 the batch travels as a set. Discovery order on the sender interleaves uneven
-branches, and receivers must not trust sender ordering anyway. Applying a
-child before its staged parent would classify the child as a fast-forward
+branches, and receivers must not trust sender ordering anyway. The same rule
+applies to every multi-event wire shape. Applying a child before its staged
+parent would classify the child as a fast-forward
 (its ancestry resolves through staging), jump the head past the parent, and
 then discard the parent's operations as "already history" while the event
 itself sits committed in storage: a silent, durable loss.
@@ -202,8 +203,9 @@ simply rejects the batch as malformed.
 The comparison semantics described here are pinned by a randomized property
 test: hundreds of generated DAGs, random antichain clock pairs, and a
 brute-force reachability oracle that recomputes every verdict from first
-principles (cover containment, grounding as ancestry intersection, meet as
-the maximal common antichain). Divergence between the state machine and the
-oracle fails the build. When you need the precise semantics of an edge case,
+principles (cover containment, root/boundary containment for safe
+adoption, and meet as the maximal common antichain). Divergence between the
+state machine and the oracle fails the build. When you need the precise
+semantics of an edge case,
 the oracle in `core/src/event_dag/tests.rs` is the most honest place to read
 them.

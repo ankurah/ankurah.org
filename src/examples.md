@@ -131,7 +131,7 @@ let fast_tracks: Vec&lt;TrackView&gt; = ctx.fetch(&quot;metadata.bpm &gt; 100&qu
 
 ### IndexedDB (WASM)
 
-```rust
+```rust,ignore
 let storage = IndexedDBStorageEngine::new("my-app").await?;
 ```
 

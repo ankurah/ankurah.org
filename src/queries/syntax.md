@@ -4,7 +4,7 @@ AnkQL is Ankurah's query language for filtering entities. It uses familiar SQL-l
 
 ## Basic Comparisons
 
-```
+```text
 field = value       # Equality
 field != value      # Not equal
 field > value       # Greater than
@@ -25,14 +25,14 @@ field <= value      # Less than or equal
 
 Combine conditions with `AND` and `OR`:
 
-```
+```text
 condition1 AND condition2
 condition1 OR condition2
 ```
 
 Use parentheses for complex logic:
 
-```
+```text
 (condition1 OR condition2) AND condition3
 ```
 
@@ -48,7 +48,7 @@ Use parentheses for complex logic:
 
 Check if a value is in a list:
 
-```
+```text
 field IN (value1, value2, value3)
 ```
 
@@ -60,7 +60,7 @@ field IN (value1, value2, value3)
 
 Use `ORDER BY` to sort results:
 
-```
+```text
 ... ORDER BY field ASC
 ... ORDER BY field DESC
 ```
@@ -95,7 +95,7 @@ Use the `fetch!` and `selection!` macros for dynamic queries. They support multi
 
 The unquoted form is the most concise. Variables expand to equality by default:
 
-```rust
+```rust,ignore
 let artist = "Prince";
 fetch!(ctx, {artist}).await?;  // Equivalent to: artist = 'Prince'
 ```
