@@ -1,19 +1,32 @@
 # Quick Start (Template)
 
-The fastest way to a running Ankurah app is the React + Sled template with
-`cargo-generate`:
+The fastest way to a running Ankurah app is a template with
+[`cargo-generate`](https://github.com/cargo-generate/cargo-generate). Two are
+available today — pick your frontend:
+
+## React
 
 ```bash
-cargo generate https://github.com/ankurah/react-sled-template
+cargo generate https://github.com/ankurah/react-template
 ```
 
-This creates a new project with:
+A Rust server (Sled storage) with a React + TypeScript frontend: WASM bindings,
+WebSocket sync between client and server, and example models and UI components.
 
-- A Rust server using the Sled storage backend
-- A React frontend with TypeScript
-- WASM bindings pre-configured
-- WebSocket communication between client and server
-- Example models and UI components
+## Leptos
+
+```bash
+cargo generate https://github.com/ankurah/leptos-template
+```
+
+The same chat app in Leptos (Rust → WASM, trunk/CSR): reactive live queries
+wired through `ankurah-signals`' reactive-graph integration, with
+virtual-scrolled message lists.
+
+Both templates share the same Rust model and server, so you can start from
+whichever frontend you prefer.
+
+## Run it
 
 After generating your project:
 
@@ -22,16 +35,17 @@ cd your-project-name
 ./dev.sh
 ```
 
-This starts watchers for the Rust server, wasm-bindings, and React app. Open
-your browser to `http://localhost:5173`. Press Ctrl+C to stop and all
-watchers will exit cleanly.
+`dev.sh` builds the Rust server and the frontend and starts everything on
+randomized local ports (to avoid collisions) — it prints the URL to open on
+startup. Stop it with `./dev.sh --stop` (see `./dev.sh --help` for `--status`,
+`--logs`, and `--restart`).
 
-To see real-time synchronization in action, open the app in one regular
-browser tab and one incognito tab: the incognito tab gets its own IndexedDB
-store, so the two tabs behave as two independent nodes syncing through your
-server.
+To see real-time synchronization in action, open the app in one regular browser
+tab and one incognito tab: the incognito tab gets its own IndexedDB store, so
+the two tabs behave as two independent nodes syncing through your server.
 
-> **Tip**: More templates will be added soon for different use cases!
+> **Tip:** A React Native template also exists at
+> [`ankurah/react-native-template`](https://github.com/ankurah/react-native-template).
 >
 > **Need help?** Join the [Ankurah Discord](https://discord.gg/XMUUxsbT5S)!
 
