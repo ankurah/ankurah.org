@@ -6,8 +6,9 @@ frontend:
 
 - **Leptos** — `cargo generate https://github.com/ankurah/leptos-template`
 - **React** — `cargo generate https://github.com/ankurah/react-template`
+- **React Native** — `cargo generate https://github.com/ankurah/react-native-template`
 
-Both scaffold the same Rust server and models with a live-syncing chat UI and
+They scaffold the same Rust server and models with a live-syncing chat UI and
 differ only in the frontend. The durable node uses the **Sled** storage engine
 by default.
 
@@ -15,6 +16,8 @@ by default.
 > container — is on the way.
 
 ## Run it
+
+**Leptos / React (web):**
 
 ```bash
 cd your-project-name
@@ -25,13 +28,20 @@ cd your-project-name
 ports — open the URL it prints. Stop with `./dev.sh --stop` (`--status`,
 `--logs`, and `--restart` are also available).
 
-To see real-time synchronization in action, open the app in one regular browser
-tab and one incognito tab: the incognito tab gets its own IndexedDB store, so
-the two tabs behave as two independent nodes syncing through your server.
+**React Native (iOS)** — requires Xcode and an iOS simulator:
 
-> **Tip:** A React Native template also exists at
-> [`ankurah/react-native-template`](https://github.com/ankurah/react-native-template).
->
+```bash
+cd your-project-name
+cargo run -p your-project-name-server   # start the server (ws://localhost:9898)
+./dev.sh                                # build the bindings + launch the iOS app
+```
+
+To see real-time synchronization in action, run the app as two independent
+nodes. On the web, open one regular browser tab and one incognito tab — the
+incognito tab gets its own IndexedDB store, so the two behave as separate nodes
+syncing through your server. On React Native, run it on two simulators (or one
+simulator plus a web template).
+
 > **Need help?** Join the [Ankurah Discord](https://discord.gg/XMUUxsbT5S)!
 
 ## Next Steps
