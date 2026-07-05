@@ -8,12 +8,12 @@ hangs off this map.
 
 ```mermaid
 flowchart LR
-    subgraph client["Ephemeral Node (browser / WASM)"]
+    subgraph client["Ephemeral Node (browser)"]
         direction TB
-        app["Applications<br/>(React / Leptos bindings)"]
-        cnode["Node<br/>Context · Reactor / LiveQueries · Policy"]
+        app["Applications<br/>React / Leptos bindings"]
+        cnode["Node<br/>Context · Reactor · Policy"]
         ceng["Storage Engine Layer"]
-        cidb[("IndexedDB<br/>entity state + events")]
+        cidb[("IndexedDB<br/>state + events")]
         app --> cnode
         cnode --> ceng
         ceng --> cidb
@@ -21,9 +21,9 @@ flowchart LR
 
     subgraph server["Durable Node (server)"]
         direction TB
-        snode["Node<br/>Context · Reactor / LiveQueries · Policy"]
+        snode["Node<br/>Context · Reactor · Policy"]
         seng["Storage Engine Layer"]
-        sstore[("sled / Postgres / SQLite<br/>entity state + events")]
+        sstore[("sled / Postgres / SQLite<br/>state + events")]
         snode --> seng
         seng --> sstore
     end
@@ -85,11 +85,12 @@ all resolve uniformly. The full trace lives in
 
 ## Consistency Model
 
-Ankurah uses **eventual consistency** with strong guarantees:
-
-- Operations are **causally consistent**: if event B depends on event A, all nodes see A before B
-- Conflicts are resolved deterministically using operation IDs
-- Nodes can operate while partitioned and sync when reconnected
+Eventual consistency with strong per-entity guarantees: causal consistency
+(a change applies only after the changes it was built on), deterministic
+per-field conflict resolution, and partition tolerance -- nodes keep
+working offline and converge on reconnect. The precise promises and
+non-promises are in
+[Conflict Resolution & Guarantees](concurrency/guarantees.md).
 
 ## Learn More
 
