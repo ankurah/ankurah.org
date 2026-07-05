@@ -1,3 +1,7 @@
+<!-- GENERATED FILE - do not edit here.
+     Source of truth: ankurah repo docs/internals/ (run scripts/sync-internals.sh to refresh).
+     Consolidation plan: https://github.com/ankurah/ankurah/issues/283 -->
+
 # The Compare-Apply Cycle
 
 Every mutation that reaches an entity -- whether from a local commit or a

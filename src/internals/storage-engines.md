@@ -1,3 +1,7 @@
+<!-- GENERATED FILE - do not edit here.
+     Source of truth: ankurah repo docs/internals/ (run scripts/sync-internals.sh to refresh).
+     Consolidation plan: https://github.com/ankurah/ankurah/issues/283 -->
+
 # Storage Engine Layer
 
 The storage engine layer is the bottom of the Ankurah stack -- the only part
