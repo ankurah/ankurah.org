@@ -117,7 +117,9 @@ then read Ankurah signals (`livequery.get()`, view fields) inside Leptos
 closures like any other reactive value -- dependencies register with
 Leptos's reactive graph automatically. The
 [Leptos template](https://github.com/ankurah/ankurah-leptos-sled-template)
-is a working end-to-end example.
+shows the wiring end to end. Fair warning: the Leptos integration is young
+and largely untested today -- expect rough edges, and prefer the React
+path if you need the beaten track.
 
 ## How it connects underneath
 
