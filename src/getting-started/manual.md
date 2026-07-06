@@ -71,20 +71,11 @@ cargo watch -x 'run -p ankurah-example-server'
 
 ### Leptos Example App
 
-1. **Install Trunk** (build tool used by Leptos):
-
-   ```bash
-   cargo install trunk
-   ```
-
-2. **Run the Leptos Example App** (keep this running):
-
-   ```bash
-   cd examples/leptos-app
-   trunk serve --open
-   ```
-
-> **Note:** For the Leptos app, there is no need to build the Wasm bindings crate separately.
+The Leptos example is maintained as a standalone template repository rather than
+in the ankurah repo. Clone
+[ankurah/leptos-template](https://github.com/ankurah/leptos-template)
+and follow its README to run it. It uses [Trunk](https://trunkrs.dev/) to build
+and serve, and does not require building the Wasm bindings crate separately.
 
 ## How It Works
 
