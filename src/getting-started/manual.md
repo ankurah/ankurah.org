@@ -73,7 +73,7 @@ cargo watch -x 'run -p ankurah-example-server'
 
 The Leptos example is maintained as a standalone template repository rather than
 in the ankurah repo. Clone
-[ankurah/leptos-sled-template](https://github.com/ankurah/leptos-sled-template)
+[ankurah/leptos-template](https://github.com/ankurah/leptos-template)
 and follow its README to run it. It uses [Trunk](https://trunkrs.dev/) to build
 and serve, and does not require building the Wasm bindings crate separately.
 
