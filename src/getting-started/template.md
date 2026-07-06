@@ -9,11 +9,9 @@ frontend:
 - **React Native** — `cargo generate https://github.com/ankurah/react-native-template`
 
 They scaffold the same Rust server and models with a live-syncing chat UI and
-differ only in the frontend. The durable node uses the **Sled** storage engine
-by default.
-
-> A **Postgres** storage option — the durable node backed by a Postgres
-> container — is on the way.
+differ only in the frontend. Choose the durable node's storage engine at generate
+time — **Sled** (embedded, the default) or **Postgres** — by adding
+`--define storage=postgres`.
 
 ## Run it
 
