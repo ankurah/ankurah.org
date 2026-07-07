@@ -65,7 +65,7 @@ comparison algorithm answers with one of six relations:
 | Relation | Meaning | What the node does |
 |----------|---------|--------------------|
 | `Equal` | Same point in history | Nothing |
-| `StrictDescends` | Incoming is strictly newer | Fast-forward: apply and advance the head |
+| `StrictDescends` | Incoming is strictly newer | Fast-forward: apply and advance the head; if committed-but-unincorporated events sit between, replay them first (layers from the current head) |
 | `StrictAscends` | Incoming is strictly older | Nothing (already integrated) |
 | `DivergedSince` | Concurrent branches since a common ancestor (the **meet**) | Merge, layer by layer, from the meet |
 | `Disjoint` | No shared history at all (different genesis) | Reject: this is a different entity's lineage, or an attack |
