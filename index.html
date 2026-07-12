@@ -111,9 +111,31 @@ const AlbumList = signalObserver(({ albums }: Props) =&gt; {
   ...
 }</code></pre>
                 </div>
-                <div class="feature-card">
-                    <h3><span class="feature-icon-inline">🔋</span>Batteries Included</h3>
-                    <p>WebSocket • HTTP/REST • Authentication • Query routing</p>
+                <div class="feature-card batteries-card">
+                    <h3><span class="feature-icon-inline" aria-hidden="true">🔋</span>Batteries Included</h3>
+                    <p class="batteries-intro">Common building blocks, ready to compose.</p>
+                    <div class="batteries-groups">
+                        <div class="batteries-group">
+                            <h4>Storage engines</h4>
+                            <ul class="batteries-list" role="list">
+                                <li>Postgres</li>
+                                <li>SQLite</li>
+                                <li>Sled</li>
+                                <li>IndexedDB</li>
+                            </ul>
+                        </div>
+                        <div class="batteries-group">
+                            <h4>Connectors &amp; policy</h4>
+                            <ul class="batteries-list" role="list">
+                                <li>WebSocket server</li>
+                                <li>Native WebSocket client</li>
+                                <li>Browser/WASM WebSocket client</li>
+                                <li>Iroh (coming soon)</li>
+                                <li>JWT</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <a class="batteries-link" href="internals/storage-engines.html">Explore storage engines →</a>
                 </div>
             </div>
         </div>
@@ -213,4 +235,3 @@ const AlbumList = signalObserver(({ albums }: Props) =&gt; {
     </footer>
 </body>
 </html>
-

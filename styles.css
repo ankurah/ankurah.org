@@ -462,6 +462,63 @@ body {
     line-height: 1.7;
 }
 
+.batteries-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.batteries-intro {
+    margin-bottom: 1rem;
+}
+
+.batteries-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 1rem;
+}
+
+.batteries-group h4 {
+    margin-bottom: 0.5rem;
+    color: #536a7e;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.batteries-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+}
+
+.batteries-list li {
+    padding: 0.35rem 0.55rem;
+    border: 1px solid rgba(112, 182, 255, 0.3);
+    border-radius: 999px;
+    background: rgba(112, 182, 255, 0.14);
+    color: #3f5d77;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.batteries-link {
+    align-self: flex-start;
+    margin-top: 1rem;
+    color: #2f6da8;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.batteries-link:hover,
+.batteries-link:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+
 .feature-card .feature-note {
     font-size: 0.7rem;
     color: #bbb;
@@ -673,4 +730,3 @@ footer {
         padding: 1rem;
     }
 }
-
