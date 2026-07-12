@@ -1,9 +1,14 @@
 # How Ankurah Handles Concurrency
 
-Ankurah lets many nodes write to the same entities at the same time, with no
-central lock and no requirement that anyone is online. A phone can edit an
-album while a server processes an import job touching the same record; both
-edits survive, and every node ends up with the same state.
+Ankurah's event-DAG engine can merge changes that different nodes produce
+without a central lock. Once both causally complete histories are delivered,
+every node that successfully integrates them computes the same result. The
+0.9 connectors do not yet provide an offline-write outbox or automatic replay
+on reconnect, so delivery of changes committed while disconnected remains a
+separate application or connector concern. Reliable replay is coming soon;
+track [ankurah/ankurah#195](https://github.com/ankurah/ankurah/issues/195) and
+the broader reconciliation design in
+[ankurah/ankurah#115](https://github.com/ankurah/ankurah/issues/115).
 
 This chapter builds the mental model, and
 [Conflict Resolution & Guarantees](guarantees.md) states the resulting
@@ -68,51 +73,59 @@ comparison algorithm answers with one of six relations:
 | `StrictDescends` | Incoming is strictly newer | Fast-forward: apply and advance the head |
 | `StrictAscends` | Incoming is strictly older | Nothing (already integrated) |
 | `DivergedSince` | Concurrent branches since a common ancestor (the **meet**) | Merge, layer by layer, from the meet |
-| `Disjoint` | No shared history at all (different genesis) | Reject: this is a different entity's lineage, or an attack |
-| `BudgetExceeded` | History too deep to classify within budget | Error, after internal retry with a larger budget |
+| `Disjoint` | No shared history at all (an unrelated genesis for this `EntityId`) | Reject wholesale adoption of that lineage |
+| `BudgetExceeded` | Deep or wide history exceeded the traversal budget | Error, after internal retry with a larger budget |
 
-The overwhelmingly common case is `StrictDescends` with the incoming event
+An optimized common case is `StrictDescends` with the incoming event
 sitting exactly one step above the current head. That case is detected with
 a cheap shortcut and never walks the graph at all.
 
 ## Merging diverged branches
 
 For `DivergedSince`, the node computes the **meet** (the most recent common
-ancestors) and then replays both branches forward from the meet in **layers**.
-Each layer contains only events that are mutually concurrent with each other;
-layers are ordered so that parents always come before children.
+ancestors) and sweeps the accumulated graph forward in **layers**. Divergent
+frontier events in a layer are concurrent, but a layer can also include inert
+`already_applied` context from below the meet; layer membership alone therefore
+does not prove concurrency. The sweep processes in-graph parents before their
+children.
 
 Each entity property belongs to a **property backend**, and each backend
 decides what concurrency means for its data:
 
 - The **LWW** backend picks a single winner per property, preferring causally
   newer writes and breaking true ties deterministically.
-- The **Yrs** backend wraps a text CRDT, so concurrent edits interleave and
-  all of them survive.
+- The **Yrs** backend wraps a text CRDT, so concurrent updates apply
+  deterministically; concurrent inserts survive, although their visible
+  interleaving may not match either author's intent.
 
-The point of the layer machinery is that backends never have to think about
-graph shapes. They receive flat groups of concurrent events in a correct
-order, and apply their own policy within each group.
+The layer machinery keeps graph retrieval and traversal out of property
+backends. They receive topological generations and query the accumulated graph
+through `layer.compare` and `layer.dag_contains` when their policy needs causal
+facts.
 
 ## The promises
 
 The concurrency system is built to keep a small set of promises:
 
-1. **Convergence.** Nodes that receive the same events reach identical state,
-   regardless of arrival order. Comparison verdicts and merge results depend
-   only on the graph, never on timing. A randomized property test checks the
+1. **Convergence.** Nodes that successfully integrate the same causally
+   complete event set reach identical state across permitted delivery
+   schedules. Comparison verdicts and merge results depend only on the graph,
+   never on wall-clock timing. A randomized property test checks the
    comparison verdicts against a brute-force reachability oracle across
    hundreds of generated DAGs and many more clock comparisons.
-2. **No silent loss.** A write that reached the graph is never dropped by
-   ordering accidents. Batches of events are topologically sorted before
-   application on the receiving side, so a child can never sneak in ahead of
-   its parent and orphan the parent's operations.
+2. **Parents first within a delivered batch.** Receivers topologically sort
+   each event-bearing batch instead of trusting sender order. This protects a
+   batch from child-before-parent delivery, but it does not fill ancestry the
+   payload omitted; automatic gap replay is planned in
+   [#268](https://github.com/ankurah/ankurah/issues/268).
 3. **No foreign history.** A clock that smuggles in an unrelated lineage
    (a second genesis) is never adopted wholesale. It either merges through
    the layer machinery or is rejected as `Disjoint`.
-4. **Durability ordering.** Events are committed to storage before any state
-   that references them is persisted, so a crash can leave harmless orphaned
-   events but never a state whose history is missing.
+4. **Event-bearing durability ordering.** Local commits and incoming paths
+   that carry events store those events before persisting state that references
+   them. Pure `StateSnapshot` payloads are an intentional exception for
+   ephemeral working sets: their head events may remain available only from a
+   durable peer.
 
 ## Where to go next
 

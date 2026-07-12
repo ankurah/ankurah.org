@@ -1,6 +1,8 @@
 # Querying Data
 
-Ankurah provides a SQL-like query language called **AnkQL** for filtering and retrieving entities. Queries work consistently across all storage backends—whether you're querying Postgres on your server or IndexedDB in a browser.
+Ankurah provides a SQL-like query language called **AnkQL** for filtering and
+retrieving entities. The same public query API targets Postgres, SQLite, Sled,
+and browser IndexedDB, although execution strategy and backend maturity differ.
 
 ## Two Ways to Query
 
@@ -27,7 +29,9 @@ Use `query()` when your UI should update automatically as data changes:
 <pre><code transclude="example/server/src/main.rs#livequery-rust">// Using selection! macro with ctx.query()
 let q: LiveQuery&lt;AlbumView&gt; = ctx.query(selection!(&quot;year &gt; 1985&quot;))?;</code></pre>
 
-A `LiveQuery` is reactive—when entities matching your query are created, updated, or deleted (anywhere in the system), the query's results update automatically.
+A `LiveQuery` is reactive: local commits and remote changes delivered to the
+node can add an entity to the result set, update one already in it, or make one
+leave the predicate. The query updates automatically as those changes apply.
 
 ## Query Methods
 
@@ -80,6 +84,10 @@ let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;artist = &#39;Prince&#39; A
 
 Positional arguments with `{}`:
 
+Placeholders are typed values. Do **not** wrap `{}` in AnkQL quotes, even
+when the argument is a string; quotes are only for string literals written
+directly in the query.
+
 <pre><code transclude="example/server/src/main.rs#fetch-quoted-positional">// Quoted form with positional arguments
 let min_year = 1980;
 let max_year = 1990;
@@ -88,11 +96,11 @@ let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;year &gt;= {} AND year &lt;
 
 Multiple positional arguments:
 
-<pre><code transclude="example/server/src/main.rs#fetch-quoted-mixed">// Quoted form with named variable interpolation
+<pre><code transclude="example/server/src/main.rs#fetch-quoted-mixed">// String and numeric positional arguments are typed; do not quote `{}` placeholders.
 let artist = &quot;Prince&quot;;
 let year = 1985;
 
-let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;artist = &#39;{}&#39; AND year &gt; {}&quot;, artist, year).await?;</code></pre>
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;artist = {} AND year &gt; {}&quot;, artist, year).await?;</code></pre>
 
 #### With query() and selection!
 
@@ -121,4 +129,3 @@ let live: LiveQuery&lt;AlbumView&gt; = ctx.query(selection!(&quot;artist = &#39;
 
 - [Query Syntax](syntax.md) - Learn the full AnkQL query language
 - [React Bindings](../reactivity/react.md) - Using queries in React components
-

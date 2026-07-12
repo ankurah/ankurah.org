@@ -5,7 +5,8 @@
 # Get Started
 
 - [Quick Start (Template)](getting-started/template.md)
-- [Manual Setup](getting-started/manual.md)
+- [A Synchronized Feature, End to End](getting-started/first-app.md)
+- [Run the Repository Examples](getting-started/manual.md)
 
 # Build Your App
 

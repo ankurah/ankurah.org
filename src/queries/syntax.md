@@ -83,9 +83,11 @@ String literals use single quotes:
 
 <pre><code transclude="example/server/src/main.rs#syntax-string-literal">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;name = &#39;Purple Rain&#39;&quot;).await?;</code></pre>
 
-To include a single quote in a string, escape it with another single quote:
+For a value containing a single quote, use typed substitution. AnkQL does not
+implement SQL's doubled-quote escape inside string literals:
 
-<pre><code transclude="example/server/src/main.rs#syntax-escape-quote">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;name = &#39;Rock &#39;&#39;n&#39;&#39; Roll&#39;&quot;).await?;</code></pre>
+<pre><code transclude="example/server/src/main.rs#syntax-escape-quote">let name = &quot;Rock &#39;n&#39; Roll&quot;;
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;name = {}&quot;, name).await?;</code></pre>
 
 ## Variable Interpolation
 
@@ -138,10 +140,14 @@ let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, {artist} AND year &gt; {year}).aw
 
 Use quoted form for string literals and positional arguments:
 
-<pre><code transclude="example/server/src/main.rs#syntax-interpolate-str">// Quoted form with positional argument for string values
+Placeholders are typed values. Do **not** wrap `{}` in AnkQL quotes, even
+when the argument is a string; quotes are only for string literals written
+directly in the query.
+
+<pre><code transclude="example/server/src/main.rs#syntax-interpolate-str">// String positional arguments are typed; do not quote `{}` placeholders.
 let artist = &quot;Prince&quot;;
 
-let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;artist = &#39;{}&#39;&quot;, artist).await?;</code></pre>
+let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;artist = {}&quot;, artist).await?;</code></pre>
 
 Multiple variables:
 
@@ -162,7 +168,7 @@ let albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;artist = &#39;Prince&#39; A
 
 <pre><code transclude="example/server/src/main.rs#syntax-exists">// Check if any entities match the query
 let album_name = &quot;Purple Rain&quot;;
-let matching_albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;name = &#39;{}&#39;&quot;, album_name).await?;
+let matching_albums: Vec&lt;AlbumView&gt; = fetch!(ctx, &quot;name = {}&quot;, album_name).await?;
 let exists = matching_albums.len() &gt; 0;</code></pre>
 
 ### Get first match

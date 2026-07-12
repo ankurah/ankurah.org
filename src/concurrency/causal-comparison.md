@@ -1,12 +1,15 @@
 # Causal Comparison: Frontiers and Meets
 
-Everything in the previous chapter reduces to one function:
+Conceptually, everything in the previous chapter reduces to one operation:
 
 ```text
-compare(event_getter, subject, comparison, budget) -> CausalRelation
+compare(event_getter, subject, comparison, budget)
+    -> Result<ComparisonResult<E>, RetrievalError>
 ```
 
-Given two clocks, it answers: does `subject` strictly descend `comparison`,
+`ComparisonResult` contains the causal relation plus the accumulated graph
+needed by a later merge. Given two clocks, the operation answers: does
+`subject` strictly descend `comparison`,
 strictly precede it, equal it, diverge from it since some meet, or share
 nothing with it at all? This chapter walks through how that answer is
 computed, and why several of the details are load-bearing.
@@ -144,22 +147,26 @@ running state.
 
 If the frontiers exhaust with no common node at all, the traversal has seen
 both histories down to their genesis events. Different genesis events prove
-different lineages: `Disjoint`. This is the backstop that makes entity
-identity meaningful; an entity is its creation event, and no amount of clock
-juggling grafts one entity's history onto another.
+different lineages: `Disjoint`. This is the backstop for lineage integrity:
+an independently generated `EntityId` has one accepted creation event anchoring
+its history, and no amount of clock juggling can replace that genesis wholesale.
 
 ## Budget
 
-The traversal spends one unit of budget per event fetch and gives up when it
-runs out. `compare` retries internally once with four times the budget before
-reporting `BudgetExceeded`. Only the **accumulator** (the recorded DAG
-structure and an LRU cache of fetched events) survives the retry; the
-traversal state itself restarts from the original clocks. Re-walked steps
-avoid storage round-trips but still spend budget.
+The current budget is a **soft breadth-step guard**, not a hard cap on storage
+fetches. A traversal step drains the entire current frontier before the next
+budget check, so a wide frontier may process more entries than the nominal
+remaining budget; the preliminary quick-check fetches are outside this budget
+as well. `compare` retries internally once with four times the budget before
+reporting `BudgetExceeded`. Only the **accumulator** (the recorded DAG structure
+and an LRU cache of fetched events) survives the retry; traversal state restarts
+from the original clocks. Re-walked entries can hit the cache but still count
+toward the soft guard.
 
-Because visits are deduplicated per side, budget consumption is linear in the
-explored region. Deep linear histories are the expensive case, and the common
-verdicts fire long before exhaustion.
+Visits are deduplicated per side, so charged traversal work remains linear in
+the explored `(event, side)` region. Deep histories consume many sequential
+steps; wide histories can overshoot within one step. Common verdicts usually
+fire before full exhaustion.
 
 ## Unfetchable events
 

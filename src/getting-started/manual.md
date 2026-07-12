@@ -1,11 +1,19 @@
-# Manual Setup
+# Run the Repository Examples
 
-Most projects should start from the [template](template.md). Use this path
-if you cannot, or if you want to see every moving part: it runs the example
-apps from the [ankurah repository](https://github.com/ankurah/ankurah)
-directly.
+Most projects should start from the [template](template.md), then follow
+[A Synchronized Feature, End to End](first-app.md). This page is for contributors
+and readers who want to run the smaller example applications maintained inside
+the [Ankurah repository](https://github.com/ankurah/ankurah). It is not a
+from-scratch project setup guide.
 
-### Prerequisites
+## Get the source
+
+```bash
+git clone https://github.com/ankurah/ankurah
+cd ankurah
+```
+
+## Prerequisites
 
 - **Install Rust:**
 
@@ -21,10 +29,10 @@ directly.
 
   - [wasm-pack installer](https://rustwasm.github.io/wasm-pack/installer/)
 
-- **Install Bun** (npm/node might work, but Bun is faster):
+- **Install Bun** (used by the React example commands below):
   - [Bun installation guide](https://bun.sh/docs/installation)
 
-### Server Setup
+## Server Setup
 
 Start the example server (keep this running):
 
@@ -38,24 +46,26 @@ Or in development mode with auto-reload:
 cargo watch -x 'run -p ankurah-example-server'
 ```
 
-### React Example App
+## React Example App
 
-1. **Compile the Wasm Bindings** (keep this running):
+1. **Compile the WASM bindings** in a second terminal:
 
    Navigate to the `wasm-bindings` example directory:
 
    ```bash
    cd examples/wasm-bindings
-   wasm-pack build --target web --debug
+   wasm-pack build --target web --dev
    ```
 
-   Or in development mode with auto-rebuild:
+   The one-off build exits when it finishes. For automatic rebuilds, keep this
+   watcher running instead:
 
    ```bash
-   cargo watch -s 'wasm-pack build --target web --debug'
+   cargo watch -s 'wasm-pack build --target web --dev'
    ```
 
-2. **Run the React Example App** (keep this running):
+2. **Run the React example app** in a third terminal, starting again from the
+   repository root:
 
    ```bash
    cd examples/react-app
@@ -69,10 +79,10 @@ cargo watch -x 'run -p ankurah-example-server'
 
    > **Note:** You can also use two regular browser tabs, but they share one IndexedDB local storage backend, so incognito mode provides a better test of multi-node synchronization.
 
-### Leptos Example App
+## Leptos Example App
 
-The Leptos example is maintained as a standalone template repository rather than
-in the ankurah repo. Clone
+The maintained Leptos example is the standalone template; the older in-tree
+example is excluded from the Ankurah workspace. Clone
 [ankurah/leptos-template](https://github.com/ankurah/leptos-template)
 and follow its README to run it. It uses [Trunk](https://trunkrs.dev/) to build
 and serve, and does not require building the Wasm bindings crate separately.
@@ -81,10 +91,14 @@ and serve, and does not require building the Wasm bindings crate separately.
 
 In the example setup:
 
-- The **"server"** process is a native Rust process whose node is flagged as **"durable"**, meaning that it attests it will not lose data.
-- The **"client"** process is a WASM process that is also durable in some sense, but not to be relied upon to have all data.
+- The **server** is a durable node: it retains complete event history for the
+  data it stores and answers other nodes' retrieval requests.
+- The browser is an ephemeral node. IndexedDB persists its synchronized working
+  set across reloads, but the node is not expected to retain the system's full
+  history.
 - The demo server currently uses the **Sled** backend; **Postgres**, **SQLite**, and (in the browser) **IndexedDB** are also supported.
-- WebSocket connections enable real-time bi-directional communication between nodes.
+- The WebSocket connector carries subscriptions, state, and events between the
+  browser and server.
 
 ## Next Steps
 

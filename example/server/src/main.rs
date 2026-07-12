@@ -12,11 +12,14 @@ async fn main() -> Result<()> {
     // liaison id=server-example
     let storage = SledStorageEngine::with_path(storage_dir)?;
     let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
-    node.system.create().await?;
+    node.system.wait_loaded().await;
+    if node.system.root().is_none() {
+        node.system.create().await?;
+    }
 
     let mut server = WebsocketServer::new(node);
     println!("Running server...");
-    server.run("0.0.0.0:9797").await?;
+    server.run("127.0.0.1:9797").await?;
     // liaison end
 
     Ok(())
@@ -42,6 +45,20 @@ async fn postgres_example() -> anyhow::Result<()> {
     let uri = "postgresql://localhost/mydb";
     // liaison id=storage-postgres
     let storage = Postgres::open(uri).await?;
+    // liaison end
+    let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
+
+    let _ = node;
+    Ok(())
+}
+
+// Embedded SQL storage example
+#[allow(dead_code)]
+async fn sqlite_example() -> anyhow::Result<()> {
+    use ankurah_storage_sqlite::SqliteStorageEngine;
+
+    // liaison id=storage-sqlite
+    let storage = SqliteStorageEngine::open("ankurah.sqlite").await?;
     // liaison end
     let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
 
@@ -82,10 +99,19 @@ async fn query_example(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyho
     // Using selection! macro with ctx.query()
     let q: LiveQuery<AlbumView> = ctx.query(selection!("year > 1985"))?;
     // liaison end
+
+    // liaison id=livequery-subscribe
+    use ankurah::signals::Subscribe;
+    let live: LiveQuery<AlbumView> = ctx.query("year > 2000")?;
+    live.wait_initialized().await;
+    let _guard = live.subscribe(|changes| {
+        println!("Received changes: {changes}");
+    });
+    // liaison end
     
     // liaison id=signals-rust
     use ankurah::signals::Get;
-    q.get(); // tracked by observer
+    q.get(); // tracked when called inside an observer
              // liaison end
 
     Ok(())
@@ -166,11 +192,11 @@ async fn fetch_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyh
     let _ = albums;
 
     // liaison id=fetch-quoted-mixed
-    // Quoted form with named variable interpolation
+    // String and numeric positional arguments are typed; do not quote `{}` placeholders.
     let artist = "Prince";
     let year = 1985;
 
-    let albums: Vec<AlbumView> = fetch!(ctx, "artist = '{}' AND year > {}", artist, year).await?;
+    let albums: Vec<AlbumView> = fetch!(ctx, "artist = {} AND year > {}", artist, year).await?;
     // liaison end
     let _ = (albums, artist, year);
     Ok(())
@@ -293,7 +319,8 @@ async fn syntax_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
     let _ = albums;
 
     // liaison id=syntax-escape-quote
-    let albums: Vec<AlbumView> = ctx.fetch("name = 'Rock ''n'' Roll'").await?;
+    let name = "Rock 'n' Roll";
+    let albums: Vec<AlbumView> = fetch!(ctx, "name = {}", name).await?;
     // liaison end
     let _ = albums;
 
@@ -306,10 +333,10 @@ async fn syntax_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
     let _ = albums;
 
     // liaison id=syntax-interpolate-str
-    // Quoted form with positional argument for string values
+    // String positional arguments are typed; do not quote `{}` placeholders.
     let artist = "Prince";
 
-    let albums: Vec<AlbumView> = fetch!(ctx, "artist = '{}'", artist).await?;
+    let albums: Vec<AlbumView> = fetch!(ctx, "artist = {}", artist).await?;
     // liaison end
     let _ = (albums, artist);
 
@@ -325,7 +352,7 @@ async fn syntax_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> any
     // liaison id=syntax-exists
     // Check if any entities match the query
     let album_name = "Purple Rain";
-    let matching_albums: Vec<AlbumView> = fetch!(ctx, "name = '{}'", album_name).await?;
+    let matching_albums: Vec<AlbumView> = fetch!(ctx, "name = {}", album_name).await?;
     let exists = matching_albums.len() > 0;
     // liaison end
     let _ = (exists, album_name);
@@ -366,6 +393,14 @@ async fn model_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyh
     // liaison id=model-read
     let view: AlbumView = ctx.get(album_id).await?;
     println!("Album: {} by {} ({})", view.name()?, view.artist()?, view.year()?);
+    // liaison end
+
+    // liaison id=model-update
+    let trx = ctx.begin();
+    let album = view.edit(&trx)?;
+    album.name().replace("Parade - Music from the Motion Picture")?;
+    album.year().set(&1987)?;
+    trx.commit().await?;
     // liaison end
 
     Ok(())
@@ -445,4 +480,26 @@ async fn json_examples(node: &Node<SledStorageEngine, PermissiveAgent>) -> anyho
 
     let _ = (tracks, fast_tracks);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn documented_server_examples_execute() -> anyhow::Result<()> {
+        let storage = SledStorageEngine::new_test()?;
+        let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
+        node.system.create().await?;
+
+        query_example(&node).await?;
+        fetch_examples(&node).await?;
+        query_string_examples(&node)?;
+        syntax_examples(&node).await?;
+        model_examples(&node).await?;
+        ref_examples(&node).await?;
+        json_examples(&node).await?;
+
+        Ok(())
+    }
 }

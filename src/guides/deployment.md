@@ -1,6 +1,6 @@
 # Deployment & Operations
 
-An Ankurah deployment is small: one durable server process holding the
+A basic Ankurah deployment is small: one durable server process holding the
 system of record, any number of ephemeral clients (browsers, native apps)
 connecting over WebSockets, and a storage engine under the server. This
 page covers standing that up for real -- storage choices, the one-time
@@ -8,13 +8,16 @@ system bootstrap, ports and TLS, upgrades, and backups.
 
 ## The durable server
 
-The minimal production shape, from the example server:
+The minimal durable-server shape, from the example workspace:
 
 ```rust,ignore
 let storage_dir = dirs::home_dir().unwrap().join(".ankurah");
 let storage = SledStorageEngine::with_path(storage_dir)?;
 let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
-node.system.create().await?;
+node.system.wait_loaded().await;
+if node.system.root().is_none() {
+    node.system.create().await?;
+}
 
 let mut server = WebsocketServer::new(node);
 server.run("0.0.0.0:9797").await?;
@@ -27,13 +30,21 @@ it keeps full event history and answers other nodes' fetches. Clients use
 `Node::new` (ephemeral) -- they hold a synchronized working set and lean on
 durable peers for history.
 
-**The system bootstrap.** `node.system.create()` initializes a brand-new
-system and must run **exactly once, ever, per system** -- it errors if a
-system root already exists. Every subsequent process (and every restart)
-joins the existing system instead: clients call
-`node.system.wait_system_ready().await` after connecting. A mismatched
-system root between peers is treated as a different system, so do not
-create fresh systems against stores you mean to keep.
+**The system bootstrap.** `wait_loaded()` first lets the durable node inspect
+its store. `node.system.create()` is called only when that store has no system
+root; it initializes a brand-new system and errors if a root already exists.
+Every restart reuses the stored root. Ephemeral clients call
+`node.system.wait_system_ready().await` after connecting to wait until they have
+joined the server's system; `SystemManager::create()` separately rejects
+non-durable nodes. A mismatched root identifies a different system, so do not
+replace or recreate it for stores you mean to keep.
+
+Current 0.9 caveat: these readiness methods use a check followed by a
+notification wait, which has a rare lost-wakeup window; a catalog-load error is
+logged but does not release `wait_loaded()`. In a supervised deployment, put an
+external bound on startup and treat an unresolved readiness wait as a failure
+to investigate in the logs. The implementation fix is tracked in
+[#347](https://github.com/ankurah/ankurah/issues/347).
 
 **The policy agent.** `PermissiveAgent::new()` performs no authentication
 and no authorization -- it is the development baseline. Before exposing a
@@ -44,13 +55,14 @@ server to anyone you do not fully trust, wire a real agent: see
 
 | Engine | Construction | Fits |
 |--------|--------------|------|
-| Sled | `SledStorageEngine::new()` (uses `~/.ankurah`) or `with_path(dir)` | Default: embedded, zero-dependency servers and development |
-| SQLite | `SqliteStorageEngine::open(path).await` (or `open_in_memory()`) | Single-file deployments, mobile; requires SQLite 3.45+ for JSONB |
-| Postgres | `Postgres::open("postgresql://user:pass@host/db").await` | Production SQL infrastructure, inspectable data, existing backup tooling |
+| Sled | `SledStorageEngine::new()` (uses `~/.ankurah`) or `with_path(dir)` | Template default: embedded servers and development with no external database service |
+| SQLite | `SqliteStorageEngine::open(path).await` (or `open_in_memory()`) | Single-file deployments and mobile; the crate bundles a JSONB-capable SQLite build |
+| Postgres | `Postgres::open("postgresql://user:pass@host/db").await` | Server deployments using existing PostgreSQL infrastructure and backup tooling |
 | IndexedDB | automatic in the browser template | Browser clients (WASM); not a server engine |
 
-All engines implement the same two traits and behave identically at the
-API; the trade-offs are operational. Details:
+All engines expose the same `StorageEngine` and `StorageCollection` APIs and
+aim for equivalent query semantics. Their planning, platform constraints,
+feature maturity, and operational trade-offs differ. Details:
 [Storage Engine Layer](../internals/storage-engines.md).
 
 For Postgres, the URI is standard `tokio-postgres` form. Tables are created
@@ -62,18 +74,20 @@ them, so no schema migration step is needed for new fields.
 
 `WebsocketServer::run("0.0.0.0:9797")` binds plain TCP. The example
 server uses port 9797 and the React template defaults to 9898; pick your
-own and keep client URLs in sync. For production:
+own and keep client URLs in sync. Before an internet-facing deployment:
 
 - **Terminate TLS in front of the server** (reverse proxy or load
   balancer) and point clients at `wss://your-host`. Native clients can
   also bring their own TLS configuration on the connection builder.
 - The WebSocket handshake itself is unauthenticated by design -- requests
   are authenticated individually inside the protocol (see
-  [Authentication & Policy](auth.md)) -- so transport encryption is what
-  `wss://` is buying you, not access control.
-- Browser clients are WASM builds (`wasm-pack build --target web` in your
-  bindings crate; the [template](../getting-started/template.md) wires
-  this up with a `dev.sh` that watches and rebuilds).
+  [Authentication & Policy](auth.md)) -- so `wss://` provides transport
+  confidentiality, integrity, and server identity, not application access
+  control.
+- Browser clients are WASM builds. React uses a `wasm-pack --target web`
+  bindings crate; Leptos compiles the Rust application directly through
+  Trunk. The [templates](../getting-started/template.md) wire each path into
+  their development runners.
 
 A Rust process can also be a client -- useful for workers and services
 that participate in sync rather than owning it:
@@ -87,9 +101,9 @@ node.system.wait_system_ready().await;
 Hold on to the returned `WebsocketClient` handle for the life of the
 connection, as the example does.
 
-## Upgrades
+## Upgrade note: 0.8 to 0.9
 
-- **0.8.x stores upgrade themselves.** 0.9 reads pre-0.9 LWW state
+- **Pre-0.9 LWW buffers load lazily.** 0.9 reads pre-0.9 LWW state
   buffers through a legacy fallback and rewrites each entity in the
   current format on its next save -- no migration step. Details in
   [Property Backends](../internals/property-backends.md).
@@ -99,7 +113,7 @@ connection, as the example does.
 
 ## Backups
 
-Back up the storage engine's data as a whole -- for Sled that is the
+Back up the storage engine's data as a consistent whole -- for Sled that is the
 storage directory (`~/.ankurah` by default), for SQLite the database file,
 for Postgres your normal database backup. Entity state and event history
 live side by side in the same store, and both matter: state is the
@@ -107,11 +121,21 @@ materialized view, but events are the authoritative history that concurrent
 merges depend on. Snapshot them together; a state-only backup would leave
 future merges unable to walk history.
 
-One operational note on crash behavior: events are committed before the
-state that references them is persisted, so a crash can leave orphaned
-events (harmless; integrated on next delivery) but never state pointing at
-missing history. Engine-level recovery is inherited from the engine (sled
-crash recovery, SQLite journaling, Postgres WAL).
+Use the storage engine's supported consistent-backup procedure rather than
+copying files while writes are active. For an embedded store, the conservative
+path is to stop the Ankurah process before copying it. For a database server,
+use its transactional backup tooling. Test restoration into an isolated
+environment before relying on the backup.
+
+On local commits and other event-bearing application paths, events are stored
+before the materialized state that references them. A crash can therefore
+leave those paths with stored events and stale state. A pure `StateSnapshot`
+payload is different: it may persist a snapshot without storing its head
+events, which is intentional for ephemeral working sets. Recovery of a stale
+event-backed state requires redelivery/reapplication of the unapplied event or
+a response carrying the required history; an unrelated descendant alone is not a
+documented recovery guarantee. Engine-level file or transaction recovery
+remains the responsibility of the selected engine.
 
 ## What to monitor
 

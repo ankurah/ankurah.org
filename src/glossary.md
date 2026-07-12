@@ -6,51 +6,53 @@ This glossary defines key terms and concepts used throughout Ankurah.
 
 ### Model
 
-A struct that describes the fields and their types for an entity in a collection. Models define the data binding schema and generate View and Mutable types.
+A struct that describes the fields and projected Rust types for entities in a collection. Deriving `Model` generates a read-only View and a transaction-bound mutable handle.
 
-```rust,ignore
-#[derive(Model)]
-struct Album {
-    name: String,
-    year: String,
-}
-// Generates: AlbumView, AlbumMutable
-```
+<pre><code transclude="example/model/src/lib.rs#model">#[derive(Model, Debug, Serialize, Deserialize)]
+pub struct Album {
+    #[active_type(YrsString)]
+    pub name: String,
+    pub artist: String,
+    pub year: i32,
+}</code></pre>
+
+This generates `AlbumView` and `AlbumMut` alongside the user-defined `Album`
+create input.
 
 ### Collection
 
-A collection of entities, with a name and a type that implements the Model trait. Similar to a table in a traditional database. In the Postgres backend, collections are backed by actual database tables.
+A named group of entities described by the same Model. It is similar to a table in a traditional database, although its physical representation depends on the storage engine. PostgreSQL and SQLite use per-collection state and event tables.
 
 ### Entity
 
-A discrete identity in a collection similar to a row in a database. Each entity has a dynamic schema and can have properties bound to it via Models. An entity's ID is derived from the operation that created it.
+A discrete identity in a collection, similar to a row in a database. The entity stores dynamic property state; a Model provides a typed projection over that state. Its `EntityId` is an independently generated ULID, not a derivative of its creation event.
 
 ### View
 
 A struct that represents the read-only view of an entity which is typed by the Model. Views provide type-safe access to entity properties without allowing mutations.
 
-```rust,ignore
-let album: AlbumView = entity.view()?;
-println!("Album: {} ({})", album.name, album.year);
-```
+<pre><code transclude="example/server/src/main.rs#model-read">let view: AlbumView = ctx.get(album_id).await?;
+println!(&quot;Album: {} by {} ({})&quot;, view.name()?, view.artist()?, view.year()?);</code></pre>
 
 ### Mutable
 
-A struct that represents the mutable state of an entity which is typed by the Model. Mutables allow type-safe modifications to entity properties.
+A generated handle such as `AlbumMut` that exposes an entity's active field types while a transaction is open. Obtain it by editing a View; mutations become durable only when the transaction commits.
 
-```rust,ignore
-let mut album: AlbumMutable = entity.mutable()?;
-album.name.set("New Album Name");
-```
+<pre><code transclude="example/server/src/main.rs#model-update">let trx = ctx.begin();
+let album = view.edit(&amp;trx)?;
+album.name().replace(&quot;Parade - Music from the Motion Picture&quot;)?;
+album.year().set(&amp;1987)?;
+trx.commit().await?;</code></pre>
 
 ### Event
 
-A single event that may or may not be applied to an entity. Events are immutable operations that form the basis of Ankurah's event sourcing. Each event has:
+A committed, immutable change for one entity. Each event contains:
 
-- A unique ID (ULID)
-- References to precursor events
-- A payload describing the change
-- Metadata (timestamp, node ID, etc.)
+- The collection and `EntityId`
+- Per-backend operation diffs
+- A parent clock containing the immediate precursor event IDs
+
+Its `EventId` is a SHA-256 content hash of the entity ID, operation set, and parent clock. Timestamps and node IDs are not implicit event metadata.
 
 ## Infrastructure
 
@@ -65,12 +67,14 @@ A participant in the Ankurah network. Nodes can be servers, clients, or peers. E
 
 ### Storage Engine
 
-A means of storing and retrieving data which is generally durable (but not necessarily). Available engines:
+A means of storing and retrieving state and events. The current repository ships four implementations:
 
-- **Sled**: Embedded KV store
-- **Postgres**: Relational database
-- **IndexedDB**: Browser storage (WASM)
-- **TiKV** (planned): Distributed KV store
+- **Sled**: Embedded native key-value storage
+- **SQLite**: Embedded relational storage
+- **Postgres**: Client/server relational storage
+- **IndexedDB**: Browser storage for WASM clients
+
+Ankurah is beta software, so do not assume identical feature maturity across all four engines without checking the backend-specific tests.
 
 ### Storage Collection
 
@@ -80,49 +84,53 @@ A collection of entities in a storage engine. The physical representation of a C
 
 ### Transaction
 
-A unit of work that groups multiple operations. Transactions provide:
+A local unit of work that groups creates and edits. An entity is snapshotted when it first enters the transaction; `commit()` validates the writes and generates an event for each changed entity. This API should not be read as a claim of globally serializable, cross-node ACID transactions.
 
-- Atomicity: All operations succeed or fail together
-- Isolation: Operations are isolated from other transactions
-- Consistency: Database constraints are maintained
+<pre><code transclude="example/server/src/main.rs#model-create">let trx = ctx.begin();
 
-```rust,ignore
-let trx = node.begin();
-let entity = trx.create(&Album { /* ... */ }).await?;
-trx.commit().await?;
-```
+let album = trx.create(&amp;Album {
+    name: &quot;Parade&quot;.into(),
+    artist: &quot;Prince&quot;.into(),
+    year: 1986,
+}).await?;
+
+let album_id = album.id();
+trx.commit().await?;</code></pre>
 
 ### Subscription
 
 A live query that receives updates when matching entities change. Subscriptions use SQL-like predicates for filtering.
 
-```rust,ignore
-node.subscribe::<_,_,AlbumView>("year > '2000'", |changes| {
-    // Handle changes
-}).await?;
-```
+<pre><code transclude="example/server/src/main.rs#livequery-subscribe">use ankurah::signals::Subscribe;
+let live: LiveQuery&lt;AlbumView&gt; = ctx.query(&quot;year &gt; 2000&quot;)?;
+live.wait_initialized().await;
+let _guard = live.subscribe(|changes| {
+    println!(&quot;Received changes: {changes}&quot;);
+});</code></pre>
 
 ## Event Sourcing Terms
 
 ### ULID
 
-Universally Unique Lexicographically Sortable Identifier. Used for operation IDs to enable:
+Universally Unique Lexicographically Sortable Identifier. Used for `EntityId` (and several internal request/query identifiers) to enable:
 
 - Distributed ID generation without coordination
-- Temporal ordering via lexicographic sorting
+- Lexicographic ordering by the embedded creation timestamp (not causal order)
 - Compact representation (128-bit)
+
+`EventId` is different: it is a 256-bit content hash.
 
 ### DAG (Directed Acyclic Graph)
 
 The structure formed by events and their precursor relationships. The DAG enables:
 
-- Causal consistency
+- Per-entity causal comparison and merge ordering
 - Conflict detection
 - Efficient synchronization
 
 ### Lineage
 
-The chain of events that led to an entity's current state. Used for:
+The causal event history that led to an entity's current state, including branches and merges. Used for:
 
 - Audit trails
 - Conflict resolution
@@ -130,7 +138,7 @@ The chain of events that led to an entity's current state. Used for:
 
 ### Head
 
-The most recent operation(s) in an entity's event DAG. Nodes track heads to determine if they have the latest version.
+The most recent event or concurrent events in an entity's DAG. Nodes track the head as a set because concurrent branches may produce more than one tip.
 
 ## Reactivity
 
@@ -140,7 +148,7 @@ An observable value that notifies subscribers when it changes. Ankurah's signal 
 
 ### Reactor
 
-The runtime component that manages subscriptions, tracks dependencies, and propagates changes. The reactor ensures that all live queries and derived values stay up-to-date.
+A per-node component that matches applied entity changes against registered query predicates and updates live-query result sets. The signal/observer layer, rather than the reactor itself, tracks component dependencies and derived values.
 
 ### Live Query
 
@@ -150,7 +158,7 @@ A query that automatically updates when the underlying data changes. Implemented
 
 ### Policy Agent
 
-A component that controls access to operations. Agents decide:
+A component that authenticates peer requests and controls access to reads and writes. Agents decide:
 
 - Can a node read an entity?
 - Can a node modify an entity?
@@ -162,7 +170,9 @@ A wrapper around a Node that includes user/session information (ContextData). Op
 
 ```rust,ignore
 let context = node.context(user_data)?;
-let album = context.create(&Album { /* ... */ }).await?;
+let trx = context.begin();
+let album = trx.create(&Album { /* ... */ }).await?;
+trx.commit().await?;
 ```
 
 ## Additional Resources

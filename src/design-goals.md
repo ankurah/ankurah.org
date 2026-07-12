@@ -8,35 +8,40 @@ Ankurah is designed with specific goals in mind to create a powerful, flexible, 
 
 - Define schema using "Model" structs, which define the data types for a collection of entities
 - An ActiveRecord style interface with type-specific methods for each value
-- TypeScript/JavaScript bindings allow these Model definitions to be used client or serverside
-- Macros to create and query entities in the collection
+- The same Model definitions generate native Rust types and TypeScript classes for WASM browser clients
+- Transaction, fetch/query, and selection helpers keep the typed API consistent across those targets
 
 **Example:**
 
-```rust,ignore
-#[derive(Model)]
-struct Album {
-    name: String,
-    year: String,
-    artist: String,
-}
+<pre><code transclude="example/model/src/lib.rs#model">#[derive(Model, Debug, Serialize, Deserialize)]
+pub struct Album {
+    #[active_type(YrsString)]
+    pub name: String,
+    pub artist: String,
+    pub year: i32,
+}</code></pre>
 
-// Use it
-let album = context.create(&Album {
-    name: "Origin of Symmetry".into(),
-    year: "2001".into(),
-    artist: "Muse".into(),
+Use it inside a transaction:
+
+<pre><code transclude="example/server/src/main.rs#model-create">let trx = ctx.begin();
+
+let album = trx.create(&amp;Album {
+    name: &quot;Parade&quot;.into(),
+    artist: &quot;Prince&quot;.into(),
+    year: 1986,
 }).await?;
-```
+
+let album_id = album.id();
+trx.commit().await?;</code></pre>
 
 ## Observability
 
 ### Signal-Style Reactive Pattern
 
 - Utilize a "signal" style pattern to allow for observability of changes to entities, collections, and values
-- Derivative signals can be created which filter, combine, and transform those changes
-- React bindings are a key consideration
-- Leptos and other Rust web frameworks should also work, but are lower priority initially
+- Derived signals can filter and transform those changes
+- React is the primary, maintained frontend path through `@ankurah/react-hooks`
+- A `reactive_graph` bridge and template exist for Leptos, but that integration is still young and experimental
 
 **Benefits:**
 
@@ -48,58 +53,70 @@ let album = context.create(&Album {
 
 ### Multiple Backing Stores
 
-Support for various storage backends:
+The repository currently implements:
 
-- **Sled KV Store** (initial implementation)
-- **Postgres** (production-ready relational database)
-- **TiKV** (planned - distributed transactional KV)
-- **IndexedDB** (browser/WASM support)
-- Others as needed
+- **Sled** for embedded native key-value storage
+- **SQLite** for embedded relational storage
+- **Postgres** for client/server relational storage
+- **IndexedDB** for browser/WASM storage
 
-### Event Sourcing / Operation-Based
+Ankurah is beta software. These are real implementations, not a promise that every backend has identical production maturity or feature coverage.
 
-All changes are tracked as immutable operations:
+### Event Sourcing
 
-- **Audit Trail**: All operations have a unique ID and a list of precursor operations
-- **Immutable History**: Operations are immutable (with considerations for CRDT compaction and GDPR)
-- **Current State**: The "present" state of an entity is maintained per node, including the "head" of the operation tree
-- **Version Tracking**: Nodes can determine if they have the latest version of an entity
+Changes are committed as immutable events. An event carries per-backend operation diffs and a clock containing its parent event IDs:
 
-### Operation IDs
+- **Content identity**: An `EventId` is the SHA-256 hash of the entity ID, operation set, and parent clock
+- **Immutable History**: Events are immutable (with future considerations for compaction and data-retention requirements)
+- **Current State**: The present state of an entity is maintained per node, including the head of its event DAG
+- **Version Tracking**: Nodes causally compare known entity versions and track
+  the current local head
 
-- Use **ULID** (Universally Unique Lexicographically Sortable Identifiers) for distributed ID generation
-- Enables lexicographical ordering without coordination
-- Entity IDs are derived from the initial operation that created them (genesis operation)
+### Entity and Event IDs
+
+- `EntityId` is an independently generated **ULID**, allowing any node to create an identity without coordination
+- `EventId` is a 256-bit content hash, so it commits to the change and its causal parents
+- Entity identity is therefore stable across later events and is not derived from a genesis event
 
 **Future Considerations:**
 
-- How can this be modified to provide non-adversarial cryptographic collision resistance?
-- How can we add adversarial attack resistance?
+- Compact long event histories while preserving convergence and retention guarantees
+- Harden peer validation and resource limits for adversarial environments
+- Define explicit audit/export and deletion semantics above the immutable event layer
 
 ## Development Milestones
 
-### Major Milestone 1 - Getting the foot in the door
+### Major Milestone 1 - Current beta foundation
 
 Core functionality for early adopters:
 
-- ✅ Production-usable event-sourced ORM with off-the-shelf database storage
+- ✅ Working event-sourced model and query layer with off-the-shelf storage engines
 - ✅ Rust structs for data modeling
 - ✅ Signals pattern for notifications
 - ✅ WASM Bindings for client-side use
 - ✅ WebSocket server and client
-- ✅ React Bindings
+- ✅ Maintained React bindings and React/WASM template
 - ✅ Basic included data-types: CRDT text (yrs crate) and primitive types
-- ✅ Embedded KV backing store (Sled DB)
-- ✅ Basic, single field queries (auto-indexed)
-- ✅ Postgres backend
+- ✅ Sled, SQLite, Postgres, and browser IndexedDB storage implementations
+- ✅ Basic single-field queries
 - ✅ Multi-field queries
 - ✅ Robust recursive query AST for declarative queries
 
 ### Major Milestone 2 - Stuff we need, but can live without for a bit
 
-Enhanced functionality:
+Enhanced functionality and possible future work (not release commitments):
 
-- TiKV Backend
+- Additional distributed storage engines
+- Reliable replay of writes committed while disconnected (coming soon;
+  [#195](https://github.com/ankurah/ankurah/issues/195))
+- Broader stale-cache reconciliation research
+  ([#115](https://github.com/ankurah/ankurah/issues/115))
+- Unified ingest and missing-ancestor replay
+  ([#268](https://github.com/ankurah/ankurah/issues/268))
+- Validated multi-durable deployments (coming soon; schema-registration
+  propagation blocker: [#309](https://github.com/ankurah/ankurah/issues/309))
+- Iroh peer-to-peer connector (coming soon;
+  [#341](https://github.com/ankurah/ankurah/pull/341))
 - Graph Functionality
 - User-definable data types
 - Advanced indexing strategies
@@ -110,7 +127,6 @@ Enhanced functionality:
 
 Future aspirations:
 
-- **P2P functionality**: Direct peer-to-peer connections without central servers
 - **Portable cryptographic identities**: User identities that work across nodes
 - **E2EE (End-to-End Encryption)**: Privacy-preserving data synchronization
 - **Hypergraph functionality**: More complex relationship modeling

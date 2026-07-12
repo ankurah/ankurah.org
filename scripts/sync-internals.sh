@@ -17,7 +17,8 @@ rsync -a --delete --exclude SUMMARY.md "$SRC"/ "$DST"/
 # Consolidation plan (single doc home + liaison): ankurah/ankurah#283
 BANNER='<!-- GENERATED FILE - do not edit here.
      Source of truth: ankurah repo docs/internals/ (run scripts/sync-internals.sh to refresh).
-     Consolidation plan: https://github.com/ankurah/ankurah/issues/283 -->'
+     Consolidation plan: https://github.com/ankurah/ankurah/issues/283
+     Accuracy corrections: https://github.com/ankurah/ankurah/issues/348 -->'
 for f in "$DST"/*.md; do
     printf '%s\n\n' "$BANNER" | cat - "$f" > "$f.tmp" && mv "$f.tmp" "$f"
 done

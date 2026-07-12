@@ -2,10 +2,13 @@ use ankurah::{policy::DEFAULT_CONTEXT, Context, Node, PermissiveAgent};
 use ankurah_storage_indexeddb_wasm::IndexedDBStorageEngine;
 use ankurah_websocket_client_wasm::WebsocketClient;
 use anyhow::Result;
-use std::sync::{Arc, Mutex};
+use std::{cell::RefCell, sync::Arc};
 use wasm_bindgen::prelude::*;
 
-static CONTEXT: Mutex<Option<Context>> = Mutex::new(None);
+thread_local! {
+    static CONTEXT: RefCell<Option<Context>> = const { RefCell::new(None) };
+    static CLIENT: RefCell<Option<WebsocketClient>> = const { RefCell::new(None) };
+}
 
 #[wasm_bindgen(start)]
 pub fn init() {
@@ -16,14 +19,15 @@ async fn initialize_client_impl(server_url: &str) -> Result<()> {
     // liaison id=client-example
     let storage = IndexedDBStorageEngine::open("myapp").await?;
     let node = Node::new(Arc::new(storage), PermissiveAgent::new());
-    let _client = WebsocketClient::new(node.clone(), server_url)?;
+    let client = WebsocketClient::new(node.clone(), server_url)?;
     node.system.wait_system_ready().await;
 
     let context = node.context(DEFAULT_CONTEXT)?;
-    let _albums = context.query::<ankurah_org_example_model::AlbumView>("year > 1985")?;
+
+    CONTEXT.with(|slot| slot.replace(Some(context)));
+    CLIENT.with(|slot| slot.replace(Some(client)));
     // liaison end
 
-    *CONTEXT.lock().unwrap() = Some(context);
     Ok(())
 }
 
@@ -49,11 +53,11 @@ async fn indexeddb_storage_example() -> Result<()> {
 
 #[wasm_bindgen]
 pub fn ctx() -> Result<Context, JsValue> {
-    CONTEXT
-        .lock()
-        .unwrap()
-        .clone()
-        .ok_or_else(|| JsValue::from_str("Context not initialized"))
+    CONTEXT.with(|slot| {
+        slot.borrow()
+            .clone()
+            .ok_or_else(|| JsValue::from_str("Context not initialized"))
+    })
 }
 
 // Re-export the generated TypeScript bindings

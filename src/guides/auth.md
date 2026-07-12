@@ -1,9 +1,8 @@
 # Authentication & Policy
 
-Every Ankurah node runs a **policy agent**: the component that decides who
-a request comes from and what that identity may read and write. Every
-context you create carries the agent's notion of an identity, and every
-read, write, and peer request passes through the agent's hooks.
+Every Ankurah node runs a **policy agent**: the component that identifies
+request contexts and supplies access-control hooks for local operations and
+peer requests. Each context carries the agent's notion of an identity.
 
 The examples elsewhere in this book use `PermissiveAgent::new()` -- the
 development baseline that performs **no authentication and no
@@ -24,29 +23,44 @@ The `PolicyAgent` trait gates, in user terms:
 | Point reads of an entity | `check_read` | Direct gets, delivered entities |
 | Writes | `check_write` / `check_event` | Transaction commit, with before *and* after state |
 
-A denial surfaces as an error on the failing call (`create`, `commit`,
-`fetch`, `get`); denials on a remote server come back as an errored
-request, not a dropped connection.
+Local denials surface as errors on the failing call (`create`, `commit`,
+`fetch`, `get`). Remote write and coarse request denials return request errors,
+not dropped connections. Remote row-level read denials are intentionally
+filtered out of `get`, `fetch`, and initial-subscription results, so an entity
+can look absent instead of returning `ByPolicy`.
 
 ## The JWT extension
 
 `ankurah-jwt-auth` provides `JwtAgent`: RS256-signed JWTs plus a JSON
 policy of roles, collection privileges, and row-level scope rules.
 
+Enable the `watcher` feature in the durable server. Without it,
+`new_durable` reads the policy into memory but does not publish or refresh the
+replicated `JwtPolicy` entity used by ephemeral clients:
+
+```toml
+ankurah-jwt-auth = { version = "0.9", features = ["watcher"] }
+```
+
 **Server** -- a durable node with signing keys and a policy file:
 
 ```rust,ignore
 let keys = SigningKeys::from_pem(include_str!("path/to/private_key.pem"))?;
-let agent = JwtAgent::new_durable(keys.clone(), "policy.json".as_ref())?;
+let agent = JwtAgent::new_durable(keys.clone(), "policy.json")?;
 
 let node = Node::new_durable(Arc::new(storage), agent);
-node.system.create().await?;
+node.system.wait_loaded().await;
+if node.system.root().is_none() {
+    node.system.create().await?;
+}
 ```
 
-**Authenticated context** -- a verified token becomes the context every
-operation runs under:
+**Authenticated context** -- verify the token before turning its claims into
+the context every operation runs under. `JwtContext::from_claims` is only a
+constructor; it does not verify the token itself:
 
 ```rust,ignore
+let claims = keys.verify(&token)?;
 let ctx = JwtContext::from_claims(claims, token);
 let context = node.context(ctx)?;
 
@@ -55,12 +69,15 @@ trx.create(&Post { title: "Hello World".into(), body: "First post!".into() }).aw
 trx.commit().await?;
 ```
 
-**Browser-shaped clients** hold no keys and no policy file. Construct the
-agent with `JwtAgent::new_ephemeral()`: it syncs the policy config and the
-server's *public* key over the normal replication channel (they live in a
-`JwtPolicy` entity that only the server's root context can write). The
-client then verifies tokens locally and attaches the raw JWT to each
-outgoing request; the server independently re-verifies it on receipt.
+**Browser-shaped clients** start with no key material and never hold the
+private signing key or policy file. Construct the agent with
+`JwtAgent::new_ephemeral()`: with the durable `watcher` enabled, it syncs the
+policy config and server's *public* key over the normal replication channel
+(they live in a `JwtPolicy` entity that only the server's root context can
+write). Local application code must still verify a token before constructing a
+trusted `JwtContext`; `from_claims` does not do that automatically. Outgoing
+requests carry the raw JWT, and the receiving server independently verifies it
+in `check_request`.
 
 ## The policy file
 
@@ -70,13 +87,13 @@ Two maps: roles grant named privileges, and collections require them.
 {
   "roles": {
     "Admin":  ["*"],
-    "Editor": ["view_posts", "manage_posts"],
-    "Author": ["view_posts", "create_posts"]
+    "Editor": ["view_posts", "write_posts", "manage_posts"],
+    "Author": ["view_posts", "write_posts"]
   },
   "collections": {
     "post": {
       "read":  "view_posts",
-      "write": "manage_posts",
+      "write": "write_posts",
       "scope": [
         { "filter": "author = $jwt.sub", "unless_privilege": "manage_posts" }
       ]
@@ -85,12 +102,15 @@ Two maps: roles grant named privileges, and collections require them.
 }
 ```
 
-- `read` / `write` name the privilege required to touch the collection at
-  all; `"*"` on a role is a full-access wildcard.
+- `read` / `write` name the intended operation privileges; `"*"` on a role is
+  a full-access wildcard. The current coarse query-access caveat is called out
+  under limitations below.
 - `scope` rules add **row-level** restriction: the filter is an AnkQL
   predicate that is AND-ed onto every query the user runs. Here, Authors
-  see only their own posts (`author = $jwt.sub`), while anyone holding
-  `manage_posts` bypasses the rule via `unless_privilege`.
+  may read and write only their own posts (`author = $jwt.sub`). Editors
+  also hold `manage_posts`, so they bypass the rule via
+  `unless_privilege` while still satisfying the shared `write_posts`
+  collection gate.
 
 Scope details that matter in practice:
 
@@ -101,7 +121,7 @@ Scope details that matter in practice:
 - **Rules compose with AND**, fail-closed: multiple rules all apply.
 - **`applies_to`** scopes a rule to `"read"`, `"write"`, or both
   (default). A write-only rule gates mutations without hiding rows.
-- **Enforcement is everywhere, not just queries.** Point reads re-evaluate
+- **Scope checks also cover point reads and transaction writes.** Point reads re-evaluate
   scope against the entity's actual state, and writes are checked against
   both the before and after state -- so an update cannot move a row into
   or out of your scope to dodge the rule.
@@ -109,6 +129,19 @@ Scope details that matter in practice:
 ## Current limitations (read before shipping)
 
 Honest edges of the extension as it stands today:
+
+- **Policy enforcement is still being hardened.** Ankurah is beta software,
+  and the open soundness audit covers check/apply races, remote-commit
+  atomicity, and passive replication paths. Treat the current JWT agent as a
+  reference implementation rather than an audited security boundary; follow
+  [ankurah/ankurah#336](https://github.com/ankurah/ankurah/issues/336).
+
+- **The coarse collection read gate currently accepts a write privilege.**
+  `can_access_collection` returns true when a role has either the configured
+  `read` or `write` privilege, and fetch/query use that gate. Row scopes still
+  apply, but do not treat a nominally write-only role as a confidentiality
+  boundary. This belongs to the hardening work in
+  [#336](https://github.com/ankurah/ankurah/issues/336).
 
 - **Token expiry has a built-in grace.** Verification uses the JWT
   library's default 15-minute clock-skew tolerance and does not tighten
@@ -138,7 +171,7 @@ Honest edges of the extension as it stands today:
 | Queried a scoped collection unauthenticated | `ByPolicy("No authenticated context for row filtering")` |
 | Wrote without the collection's write privilege | `CollectionDenied` |
 | Wrote a row outside your scope (before or after state) | `ByPolicy("Write outside permitted scope")` |
-| Directly fetched an out-of-scope entity by id | `ByPolicy("Read outside permitted scope")` |
+| Directly fetched an out-of-scope entity through a local/durable context | `ByPolicy("Read outside permitted scope")`; a remote read may instead omit it |
 | Tried to write the `jwtpolicy` collection as a non-root user | `ByPolicy("Only privileged contexts may write to jwtpolicy")` |
 
 ## Writing your own agent

@@ -33,15 +33,22 @@ pub struct Task {
     pub priority: i32,
 }</code></pre>
 
-Supported types include:
+Current built-in projected types include:
+
 - `String`
 - `bool`
-- Integers: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`
-- `f32`, `f64`
+- Integers: `i16`, `i32`, `i64`
+- Floating point: `f64`
+- `Option<String>`, `Option<i32>`, `Option<i64>`, `Option<f64>`
+- `Vec<u8>`, `Json`, `EntityId`, and typed `Ref<T>` references
+
+Plain `String` fields infer the Yrs text backend. Other built-ins infer LWW;
+use `#[active_type(LWW)]` when you explicitly want whole-value LWW semantics
+for a `String`.
 
 ### CRDT Types
 
-Use `#[active_type(...)]` to specify a CRDT backend for a field. The first supported CRDT type is `YrsString` for collaborative text:
+Use `#[active_type(...)]` to choose an active value backend explicitly. The shipped CRDT-backed type is `YrsString` for collaborative text:
 
 <pre><code transclude="example/model/src/lib.rs#model-document">#[derive(Model, Debug, Serialize, Deserialize)]
 pub struct Document {
@@ -101,25 +108,54 @@ Access data through the `View` type:
 <pre><code transclude="example/server/src/main.rs#model-read">let view: AlbumView = ctx.get(album_id).await?;
 println!(&quot;Album: {} by {} ({})&quot;, view.name()?, view.artist()?, view.year()?);</code></pre>
 
+## Updating Entities
+
+Views remain read-only. To update an entity, edit the View inside a
+transaction, call the active field type's mutation method, and commit:
+
+<pre><code transclude="example/server/src/main.rs#model-update">let trx = ctx.begin();
+let album = view.edit(&amp;trx)?;
+album.name().replace(&quot;Parade - Music from the Motion Picture&quot;)?;
+album.year().set(&amp;1987)?;
+trx.commit().await?;</code></pre>
+
+Here `name()` is a `YrsString`, so it offers text operations such as
+`insert`, `delete`, `overwrite`, and `replace`. `year()` is an `LWW<i32>`,
+so it uses `set`. Mutation handles stop accepting writes when their
+transaction closes.
+
 ## Generated TypeScript
 
 When you build your WASM bindings, TypeScript types are generated automatically:
 
-```typescript
-// Generated from your Rust model
-interface AlbumView {
-  id: EntityId;
-  name: string;
-  artist: string;
-  year: number;
-}
+Creation and mutation use the generated model and View APIs:
 
-// Static methods on the model class
-class Album {
-  static query(ctx: Context, query: string): AlbumLiveQuery;
-  static create(trx: Transaction, data: AlbumData): Promise<AlbumView>;
-}
-```
+<pre><code transclude="example/react-app/src/App.tsx#react-create">export async function createAlbum(
+  name: string,
+  artist: string,
+  year: number,
+): Promise&lt;AlbumView&gt; {
+  const transaction = ctx().begin();
+  const album = await Album.create(transaction, { name, artist, year });
+  await transaction.commit();
+  return album;
+}</code></pre>
+
+<pre><code transclude="example/react-app/src/App.tsx#react-update">export async function renameAlbum(
+  album: AlbumView,
+  name: string,
+): Promise&lt;void&gt; {
+  const transaction = ctx().begin();
+  album.edit(transaction).name.replace(name);
+  await transaction.commit();
+}</code></pre>
+
+The generated surface includes the model's creation/query namespace
+(`Album`), read-only `AlbumView`, transaction-bound `AlbumMut`, typed
+`AlbumLiveQuery`, result/change-set wrappers, and typed reference wrappers.
+View fields and live-query results are JavaScript getters (`album.name`,
+`albums.items`); mutations go through the active field wrapper returned by
+`album.edit(transaction)`.
 
 ## Next Steps
 

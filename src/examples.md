@@ -14,7 +14,7 @@ pub struct Album {
 
 This automatically generates:
 - `AlbumView` (read-only)
-- `AlbumMutable` (for updates)
+- `AlbumMut` (transactional updates)
 
 See [Defining Models](models.md) for full documentation.
 
@@ -22,11 +22,14 @@ See [Defining Models](models.md) for full documentation.
 
 <pre><code transclude="example/server/src/main.rs#server-example">let storage = SledStorageEngine::with_path(storage_dir)?;
 let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
-node.system.create().await?;
+node.system.wait_loaded().await;
+if node.system.root().is_none() {
+    node.system.create().await?;
+}
 
 let mut server = WebsocketServer::new(node);
 println!(&quot;Running server...&quot;);
-server.run(&quot;0.0.0.0:9797&quot;).await?;</code></pre>
+server.run(&quot;127.0.0.1:9797&quot;).await?;</code></pre>
 
 ## Rust Client
 
@@ -43,13 +46,16 @@ trx.commit().await?;</code></pre>
 
 ## React Component
 
-<pre><code transclude="example/react-app/src/App.tsx#react-component">/* creates and Binds a ReactObserver to the component */
+<pre><code transclude="example/react-app/src/App.tsx#react-component">interface Props {
+  albums: AlbumLiveQuery;
+}
+/* Bind a React observer to the component. */
 const AlbumList = signalObserver(({ albums }: Props) =&gt; {
   return (
     &lt;ul&gt;
-      /* React Observer automatically tracks albums */
+      {/* Reading items registers this render as a live-query observer. */}
       {albums.items.map((album) =&gt; (
-        &lt;li&gt;{album.name}&lt;/li&gt;
+        &lt;li key={album.id.to_base64()}&gt;{album.name}&lt;/li&gt;
       ))}
     &lt;/ul&gt;
   );
@@ -121,19 +127,21 @@ let fast_tracks: Vec&lt;TrackView&gt; = ctx.fetch(&quot;metadata.bpm &gt; 100&qu
 
 ## Storage Backends
 
-### Sled (Embedded)
-
-<pre><code transclude="example/server/src/main.rs#storage-sled">let storage = SledStorageEngine::new()?;</code></pre>
-
 ### Postgres
 
 <pre><code transclude="example/server/src/main.rs#storage-postgres">let storage = Postgres::open(uri).await?;</code></pre>
 
+### SQLite
+
+<pre><code transclude="example/server/src/main.rs#storage-sqlite">let storage = SqliteStorageEngine::open(&quot;ankurah.sqlite&quot;).await?;</code></pre>
+
+### Sled (Embedded)
+
+<pre><code transclude="example/server/src/main.rs#storage-sled">let storage = SledStorageEngine::new()?;</code></pre>
+
 ### IndexedDB (WASM)
 
-```rust,ignore
-let storage = IndexedDBStorageEngine::new("my-app").await?;
-```
+<pre><code transclude="example/wasm-bindings/src/lib.rs#storage-indexeddb">let storage = IndexedDBStorageEngine::open(&quot;myapp&quot;).await?;</code></pre>
 
 ## Next Steps
 

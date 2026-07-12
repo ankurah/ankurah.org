@@ -1,5 +1,6 @@
 :root {
     --primary-color: #70b6ff;
+    --interactive-color: #2f6da8;
     --secondary-color: #c8c8ff;
     --accent-color: #5865F2;
     --text-dark: #1a1a1a;
@@ -20,6 +21,29 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     line-height: 1.6;
     color: var(--text-dark);
+}
+
+a:focus-visible {
+    outline: 3px solid currentColor;
+    outline-offset: 3px;
+}
+
+.skip-link {
+    position: fixed;
+    top: 0;
+    left: 1rem;
+    z-index: 2000;
+    padding: 0.75rem 1rem;
+    border-radius: 0 0 8px 8px;
+    background: var(--text-dark);
+    color: white;
+    font-weight: 600;
+    text-decoration: none;
+    transform: translateY(-120%);
+}
+
+.skip-link:focus {
+    transform: translateY(0);
 }
 
 .container {
@@ -75,7 +99,7 @@ body {
 }
 
 .nav-links a:hover {
-    color: var(--primary-color);
+    color: var(--interactive-color);
 }
 
 .discord-link {
@@ -336,25 +360,46 @@ body {
 }
 
 .btn-primary {
-    background: white;
-    color: var(--primary-color);
+    background: var(--interactive-color);
+    color: white;
     box-shadow: var(--shadow);
 }
 
 .btn-primary:hover {
+    background: #255b8d;
     transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
 }
 
 .btn-secondary {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border: 2px solid white;
+    background: transparent;
+    color: var(--interactive-color);
+    border: 2px solid var(--interactive-color);
 }
 
 .btn-secondary:hover {
+    background: var(--interactive-color);
+    color: white;
+}
+
+.hero .btn-primary {
     background: white;
-    color: var(--primary-color);
+    color: var(--interactive-color);
+}
+
+.hero .btn-primary:hover {
+    background: white;
+}
+
+.hero .btn-secondary {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border-color: white;
+}
+
+.hero .btn-secondary:hover {
+    background: white;
+    color: var(--interactive-color);
 }
 
 .status-notice {
@@ -387,6 +432,7 @@ body {
     color: rgba(255,255,255,0.7);
     animation: float 2s ease-in-out infinite;
     cursor: pointer;
+    text-decoration: none;
 }
 
 .scroll-arrow {
@@ -480,7 +526,7 @@ body {
 .batteries-group h4 {
     margin-bottom: 0.5rem;
     color: #536a7e;
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -499,16 +545,28 @@ body {
     border-radius: 999px;
     background: rgba(112, 182, 255, 0.14);
     color: #3f5d77;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 600;
     line-height: 1.2;
+}
+
+.batteries-list a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: rgba(63, 93, 119, 0.45);
+    text-underline-offset: 0.15em;
+}
+
+.batteries-list a:hover,
+.batteries-list a:focus-visible {
+    text-decoration-color: currentColor;
 }
 
 .batteries-link {
     align-self: flex-start;
     margin-top: 1rem;
-    color: #2f6da8;
-    font-size: 0.8rem;
+    color: var(--interactive-color);
+    font-size: 0.85rem;
     font-weight: 600;
     text-decoration: none;
 }
@@ -520,15 +578,15 @@ body {
 }
 
 .feature-card .feature-note {
-    font-size: 0.7rem;
-    color: #bbb;
+    font-size: 0.8rem;
+    color: #667085;
     margin-top: 0.75rem;
     line-height: 1.5;
 }
 
 .code-label {
-    font-size: 0.56rem;
-    color: #999;
+    font-size: 0.75rem;
+    color: #667085;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-top: 0.75rem;
@@ -553,18 +611,19 @@ body {
 }
 
 .feature-code code {
-    display: inline-block;
+    display: block;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     line-height: 1.4;
     color: var(--text-dark);
     background: rgba(0, 0, 0, 0.03);
     padding: 0.5rem;
     border-radius: 8px;
-    border-left: 3px solid var(--primary);
-    white-space: pre;
+    border-left: 3px solid var(--primary-color);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
     min-width: 100%;
-    width: fit-content;
+    width: 100%;
 }
 
 /* Code Example Section */
@@ -615,7 +674,7 @@ body {
     color: var(--text-dark);
 }
 
-.getting-started-preview > p {
+.getting-started-preview .container > p {
     font-size: 1.2rem;
     color: var(--text-light);
     margin-bottom: 2rem;
@@ -627,10 +686,16 @@ body {
     padding: 1.5rem;
     border-radius: 8px;
     margin: 2rem auto;
+    width: 100%;
     max-width: 700px;
     font-family: 'Monaco', 'Courier New', monospace;
     font-size: 1.1rem;
     box-shadow: var(--shadow);
+    overflow-x: auto;
+}
+
+.code-snippet code {
+    white-space: nowrap;
 }
 
 /* Footer */
@@ -728,5 +793,55 @@ footer {
     .code-snippet {
         font-size: 0.9rem;
         padding: 1rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .navbar {
+        position: static;
+    }
+
+    .nav-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .logo-section {
+        justify-content: center;
+    }
+
+    .nav-links {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .nav-links a {
+        padding: 0.5rem;
+        text-align: center;
+    }
+
+    .hero {
+        min-height: auto;
+        padding: 5rem 0 7rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .btn:hover,
+    .discord-link:hover,
+    .feature-card:hover {
+        transform: none;
     }
 }

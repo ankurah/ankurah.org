@@ -83,8 +83,10 @@ it cannot stage, commit, or write. That is enforced by the next layer.
   `commit_event`. Only the outermost applier holds this.
 
 The split turns the staging discipline into a compile-time property: code
-that merely *compares* provably cannot commit, and the one place that commits
-is easy to audit.
+that merely *compares* provably cannot commit. Commit capability remains
+confined to a small set of outer application paths (`context`, `node` remote
+transaction commit, `system`, and `node_applier`) rather than one universal
+call site.
 
 Two getter implementations matter:
 
@@ -116,6 +118,12 @@ re-read and retry. That last part is the TOCTOU discipline: comparison is
 async and lock-free, so the head is re-checked under the write lock and the
 loop retries on interference, bounded at five attempts.
 
+On the `StrictDescends` event-only path, that direct application covers the
+received event's operations, not any omitted ancestor operations discovered
+during comparison. Callers currently need a causally complete event batch or a
+cumulative state snapshot; planned gap replay is tracked in
+[#268](https://github.com/ankurah/ankurah/issues/268).
+
 **`apply_state`** integrates a whole state snapshot, using the same
 comparison but coarser actions: adopt (`StrictDescends`), skip (`Equal` /
 older), or report that a proper merge needs events (diverged).
@@ -140,11 +148,13 @@ correct application sequence, and owns batch semantics:
 - **`EventBridge`**: stage everything, topologically sort, then apply
   parents-first. Wire order is untrusted by design; the sender also sorts,
   but the receiver's sort is the guarantee.
+- **`StateAndRelation`**: declared in the payload enum but currently rejected
+  as unimplemented.
 
-Batches are failure-contained: one bad item is recorded and reported (as an
-aggregate error to the sender), the remaining items still apply, and the
-reactor is notified for the subset that succeeded. A malformed or malicious
-item cannot poison unrelated entities that happened to share a delivery.
+Deliveries are failure-contained at the outer entity/update-item boundary:
+one bad item is recorded and included in the aggregate error while unrelated
+items continue, and the reactor is notified for the items that succeeded. A
+bad event can still stop the remaining events inside its own item.
 
 ## context: local commits
 
@@ -157,20 +167,24 @@ heads advance, required peers confirm, and state snapshots are written.
 
 ## The invariants at the seams
 
-These hold everywhere, and code changes are reviewed against them:
+These are the event-bearing path invariants and explicit API contracts; pure
+state snapshots are called out where they differ:
 
-1. **Stage before head.** An event must be BFS-discoverable before any head
-   references it.
-2. **Commit before state.** An event must be durable before any persisted
-   state references it. A crash may orphan events (harmless, content
-   addressed, idempotent) but never orphan state.
+1. **Stage before an event-applied head.** On paths carrying events, an event
+   must be BFS-discoverable before application advances a head to it. A
+   validated `StateSnapshot` may install cumulative state whose head events
+   live only on a durable peer.
+2. **Commit before event-backed state.** Event-bearing paths make an event
+   durable before persisting the state produced from it. A crash may leave an
+   event without its updated materialized state. Pure snapshots are again the
+   intentional exception.
 3. **`get_event` is staging plus storage; `event_stored` is storage only.**
 4. **Comparison cannot write.** `GetEvents` in, verdict out.
 5. **Budget handling is internal to `compare`.** Callers see one call and at
    most one final `BudgetExceeded`; only the accumulator survives the retry.
-6. **A diverged verdict is required for layer iteration.** `into_layers` on
-   anything else is a programming error and is not reachable through the
-   public flow.
+6. **Only a diverged verdict yields layers.** `into_layers` returns `Some`
+   for `DivergedSince` and `None` for every other relation; callers branch on
+   that result.
 7. **Receivers sort batches.** No application path trusts sender ordering.
 
 ## Why chains are advisory

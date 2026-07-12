@@ -15,40 +15,47 @@ This repository contains the source code for the [Ankurah](https://ankurah.org) 
 
 ### Prerequisites
 
-Install mdBook:
+The complete local preview uses:
+
+- [Bun](https://bun.sh/) for the fallback static server
+- [mdBook](https://rust-lang.github.io/mdBook/) and `mdbook-mermaid`
+- [liaison](https://github.com/dnorman/liaison) for keeping embedded examples in sync
+
+Install the Rust-based tools with:
 
 ```bash
-cargo install mdbook
+cargo install mdbook --version 0.5.3 --locked
+cargo install mdbook-mermaid --version 0.17.0 --locked
 ```
 
 ### Local Development
 
-1. **Build and serve the book:**
+Use `dev.sh` as the authoritative local workflow:
 
-   ```bash
-   mdbook serve
-   ```
+```bash
+./dev.sh
+```
 
-   This will start a local server at `http://localhost:3000` with auto-reload on changes.
-
-2. **View the landing page:**
-
-   After building, the landing page will be at `book/index.html`. To test the full site locally:
-
-   ```bash
-   mdbook build
-   # Then open book/index.html in your browser
-   ```
+It transcludes the example code, builds mdBook, overlays the custom landing page
+and assets into `book/`, and starts a local server. It prints the selected URL
+when ready and watches the source, landing-page, and example directories when a
+supported file watcher is available.
 
 ### Building
 
-Build the static site:
+For a one-off complete build without starting the development server, run:
 
 ```bash
+find "$PWD/src" -type f -name '*.md' -print0 | xargs -0 liaison "$PWD/index.html"
 mdbook build
+cp index.html styles.css book/
+cp -R images book/
+python3 scripts/check-links.py
 ```
 
-Output will be in the `book/` directory.
+The complete static site will be in `book/`. Running `mdbook build` by itself
+only builds the documentation surface; it does not install the custom landing
+page at `book/index.html`.
 
 ## Deployment
 
@@ -72,7 +79,7 @@ The deployment workflow:
 
 - `src/SUMMARY.md` - Navigation structure
 - `src/what-is-ankurah.md` - Overview and introduction
-- `src/getting-started.md` - Setup and templates
+- `src/getting-started/` - Template quick start and manual setup
 - `src/architecture.md` - System architecture
 - `src/glossary.md` - Terminology reference
 - `src/design-goals.md` - Design philosophy
@@ -98,7 +105,8 @@ The deployment workflow:
 
 4. Build and test locally:
    ```bash
-   mdbook serve
+   python3 scripts/check-links.py
+   ./dev.sh
    ```
 
 ### Adding Images
@@ -126,7 +134,7 @@ Contributions are welcome! Please:
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test locally with `mdbook serve`
+4. Test locally with `python3 scripts/check-links.py` and `./dev.sh`
 5. Submit a pull request
 
 ## License

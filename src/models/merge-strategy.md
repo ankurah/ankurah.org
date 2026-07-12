@@ -1,10 +1,11 @@
 # Choosing a Merge Strategy (LWW vs Yrs)
 
-Every field in a model has a **merge strategy**: the rule that decides what
-happens when two nodes change that field concurrently. Picking one is a
-modeling decision you make per field, at definition time, and it is worth a
-moment of thought -- "one writer wins" and "both edits interleave" are very
-different user experiences.
+Every replicated field in a model has a **merge strategy**: the rule that
+decides what happens when two nodes change that field concurrently. Picking
+one is a modeling decision you make per field, at definition time, and it is
+worth a moment of thought -- "one writer wins" and "CRDT updates combine" are
+very different user experiences. Fields marked `#[model(ephemeral)]` are not
+replicated and do not use a property backend.
 
 Under the hood each strategy is a **property backend**: the component that
 owns a property's operation format and implements its merge policy. This
@@ -17,13 +18,16 @@ contributor Internals section.
 
 | Backend | Name on the wire | Data model | Concurrency policy |
 |---------|------------------|------------|--------------------|
-| **Yrs** | `"yrs"` | Collaborative text and rich structures (a CRDT document) | All concurrent edits merge; the CRDT interleaves them |
+| **Yrs** | `"yrs"` | Collaborative text (`String`) backed by a CRDT document | Concurrent CRDT updates apply deterministically; inserts can interleave |
 | **LWW** | `"lww"` | Scalar register per property | One winner per property; causally newest wins, deterministic tiebreak |
 
 Model fields choose their backend at definition time. String fields default
 to Yrs text; a field can opt into LWW explicitly:
 
 ```rust,ignore
+use ankurah::Model;
+use serde::{Deserialize, Serialize};
+
 #[derive(Model, Debug, Serialize, Deserialize)]
 pub struct Record {
     #[active_type(LWW)]
@@ -31,9 +35,6 @@ pub struct Record {
     pub notes: String,     // Yrs text: concurrent edits interleave
 }
 ```
-
-(A positive/negative counter backend exists as an experiment in the tree but
-is not currently registered.)
 
 ## How operations travel
 
@@ -44,13 +45,16 @@ per backend name:
 
 ```text
 Event {
-    entity_id, parent,
+    collection, entity_id, parent,
     operations: {
         "lww": [ ...opaque diffs... ],
         "yrs": [ ...opaque diffs... ],
     },
 }
 ```
+
+`collection` travels with the event but is deliberately excluded from the
+`EventId`; the hash covers `entity_id`, `operations`, and `parent`.
 
 On the receiving side, the backend name routes each diff back to the right
 backend. Backends also serialize a **state buffer** (their full current
@@ -73,14 +77,18 @@ to be able to:
 - **Resolve concurrency**: `apply_layer`, the only method with no default.
   It receives an `EventLayer` and must implement the backend's merge policy.
 
-The layer contract, restated from the backend's point of view:
+The iterator emits topological sweep generations, earliest first. Same-layer
+events in the divergent region are concurrent, but the sweep can also emit
+accumulated events below the meet as inert `already_applied` context. Such a
+context event can be causally related to a divergent event in the same layer.
+Backends therefore must use `layer.compare`, not layer membership or iteration
+order, to determine causality:
 
-- every event in the layer is concurrent with every other event in it;
 - `already_applied` events are context: their effects are in your state;
 - `to_apply` events are new: fold them in according to your policy;
-- the layer carries the accumulated DAG, so you can ask how any two event
-  ids relate causally (`layer.compare`) and whether an id was part of the
-  explored graph at all (`layer.dag_contains`).
+- the layer carries the accumulated DAG, so you can compare any two event ids
+  (`layer.compare`) and test whether an id was part of the explored graph at
+  all (`layer.dag_contains`).
 
 Entities feed layers to every backend that appears in the merge, and if an
 event introduces a backend the entity has never seen, the new backend is
@@ -101,11 +109,11 @@ for each to_apply event:
 ```
 
 CRDT updates are commutative and idempotent, so order within the layer does
-not matter and `already_applied` context is unnecessary. Two users editing
-the same text field concurrently produce a merged text containing both edits
-(concurrent whole-field `replace` calls interleave both insertions, which is
-visible in tests as concatenated values). The trade-off: you get automatic,
-lossless merging, and you give up "one of these writes wins" semantics.
+not matter and `already_applied` context is unnecessary. Concurrent insert
+runs survive and whole-field `replace` calls may visibly interleave their
+insertions. The result converges, but convergence is not the same as preserving
+each author's higher-level intent. Choose Yrs when collaborative text semantics
+fit the product, not as a promise of universally lossless editing.
 
 ## LWW: one winner per property, chosen causally
 
@@ -116,9 +124,12 @@ possible later.
 `apply_layer` runs a per-property tournament:
 
 1. **Seed with the stored value.** The current value and its writing event
-   enter as the incumbent candidate. If the incumbent's event id is not in
-   the layer's accumulated DAG, it is *older than the meet*: it predates the
-   region being merged, and any candidate from the layer beats it.
+   enter as the incumbent candidate. If the stored provenance id is absent
+   from the accumulated DAG, the implementation marks the incumbent
+   `older_than_meet`; a candidate for that property in the current layer
+   replaces it, after which normal causal/tiebreak comparisons apply.
+   This is a conservative engine fallback, not proof that every event in the
+   layer causally descends the incumbent.
 2. **Consider every event in the layer** (both `already_applied` for context
    and `to_apply`), extracting each property write as a candidate.
 3. **Pairwise resolution** between the current winner and each candidate:
@@ -144,20 +155,28 @@ re-litigate history behind the stored entry; the incumbent faithfully
 represents everything below it. This invariant is pinned by tests, including
 an artificial construction demonstrating what would break without it.
 
-## Writing a new backend
+## Extending the built-in backend set
 
-A new backend is viable if it can honestly implement the contract:
+This is currently a contributor workflow inside the Ankurah repository, not a
+stable external plugin API. The event-DAG layer interfaces needed by a backend
+are crate-private, `backend_from_string` is hardcoded, and the derive registry
+loads only the built-in Yrs and LWW definitions. A future public registry would
+need to expose those seams first.
+
+Within the core repository, a new backend is viable if it can honestly
+implement the contract:
 
 1. Operations must round-trip: whatever `to_operations` emits,
    `apply_operations` must reproduce on another node.
 2. State buffers must round-trip losslessly, including whatever provenance
    the backend needs for future resolution.
 3. `apply_layer` must be deterministic given the same layer and prior state,
-   and must not assume any ordering among events within a layer.
+   and must not infer causality from layer membership or iteration order; use
+   `layer.compare`.
 4. Resolution may only depend on the graph (via `layer.compare` /
    `layer.dag_contains`) and event contents, never on wall clocks or arrival
    order. That is the property that makes every node converge.
 
-Register the backend name in `backend_from_string`, and it participates in
-the entire pipeline described in these chapters without the pipeline
-changing at all.
+Register the backend name in `backend_from_string` and extend the derive
+registry/configuration. The surrounding event pipeline is designed to remain
+unchanged, but external backend registration is unfinished in 0.9.

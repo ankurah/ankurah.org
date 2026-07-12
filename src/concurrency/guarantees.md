@@ -7,8 +7,9 @@ this one states the outcomes.
 
 ## What happens to an incoming change
 
-Every change arriving at an entity is classified against that entity's
-current head before it touches state:
+Every non-creation event and state snapshot arriving at an entity is classified
+against that entity's current head before it mutates state. Creation events use
+dedicated genesis guards instead:
 
 | The incoming change is... | Ankurah does... |
 |---------------------------|-----------------|
@@ -18,16 +19,21 @@ current head before it touches state:
 | Concurrent with the head (true divergence) | Merges: both branches are combined field by field |
 | From an unrelated history (different genesis) | Rejects it |
 
-Merging never blocks on coordination: there is no lock server and no
-requirement that any peer is online. Divergent branches coexist in the
+For a strictly newer state snapshot, adoption installs the cumulative state in
+that snapshot. For an event-only update, the direct path applies the received
+event's operations; it does not currently replay omitted ancestor operations.
+
+Once the required histories are available locally, merging does not coordinate
+with a lock server or another online peer. Divergent branches coexist in the
 entity's head until a later write reunifies them, and every rule below is
 deterministic so that reunification looks identical everywhere.
 
 ## The promises
 
-1. **Convergence.** Nodes that receive the same set of events reach
-   identical state, regardless of arrival order or timing. Resolution
-   depends only on the event graph, never on wall clocks.
+1. **Convergence.** Nodes that successfully integrate the same causally
+   complete event set reach identical state across permitted delivery
+   schedules. Resolution depends only on the event graph, never on wall
+   clocks. Missing ancestors or invalid creation order still produce errors.
 
 2. **Per-field merge, per your model.** Conflicts resolve at property
    granularity using the [merge strategy](../models/merge-strategy.md) each
@@ -38,24 +44,31 @@ deterministic so that reunification looks identical everywhere.
    write always beats the write it saw; truly concurrent writes resolve by
    comparing the events' content-hash ids -- an arbitrary but stable order
    every node computes independently. For collaborative-text (Yrs) fields,
-   concurrent edits merge losslessly instead of picking a winner.
+   concurrent CRDT updates apply deterministically instead of selecting one
+   whole-field winner; the resulting interleaving is not a guarantee that
+   either author's higher-level intent is preserved.
 
-4. **No silent loss.** A write that reached the event graph is never
-   dropped by an ordering accident. Receivers re-sort every incoming batch
-   parents-first themselves; sender order is not trusted.
+4. **Parents first within a delivered batch.** Receivers re-sort every
+   incoming event-bearing batch parents-first; sender order is not trusted.
+   This does not synthesize missing payload history.
 
-5. **No foreign history.** An update that smuggles in an unrelated lineage
-   (a second genesis, or a graft joining one) is never adopted wholesale --
-   it either merges through the normal machinery or is rejected.
+5. **No wholesale adoption of foreign history.** An update that includes an
+   unrelated lineage (a second genesis, or a graft joining one) is never
+   fast-forwarded wholesale -- it either routes through merge machinery or is
+   rejected.
 
-6. **Durability ordering.** Events are committed to storage before any
-   state referencing them is persisted, so a crash can leave harmless
-   orphaned events but never state whose history is missing.
+6. **Event-bearing durability ordering.** Local commits and incoming paths
+   that carry events store them before persisting state that references them.
+   Pure `StateSnapshot` payloads intentionally allow an ephemeral node to
+   persist state whose head events remain available only from a durable peer.
 
-7. **Offline is not a special case.** A node that wrote while disconnected
-   simply has a divergent branch. On reconnect, the branches compare and
-   merge by exactly the rules above -- there is no separate reconciliation
-   protocol to reason about.
+7. **Delivered offline branches use the same merge rules.** A change produced
+   while disconnected forms a normal branch and merges normally once both
+   histories are delivered. The 0.9 WebSocket connectors do not yet queue and
+   replay disconnected writes automatically on reconnect. That work is coming
+   soon; follow [#195](https://github.com/ankurah/ankurah/issues/195) and the
+   broader anti-entropy design in
+   [#115](https://github.com/ankurah/ankurah/issues/115).
 
 ## What is not promised
 
@@ -71,14 +84,24 @@ deterministic so that reunification looks identical everywhere.
   not intent. If a field needs human conflict handling, model it so both
   values survive (separate fields, a Yrs field, or an explicit review
   workflow).
+- **No automatic offline synchronization yet.** Local writes can be created
+  while disconnected, but applications cannot assume the 0.9 connectors will
+  discover and upload them after reconnect without an explicit delivery path.
+- **No automatic event-gap replay yet.** A strictly descending `EventOnly`
+  update can advance the head after applying only that event's operations; it
+  does not replay ancestor operations omitted from the payload. Deliver a
+  causally complete event batch or cumulative state snapshot. A planned ingest
+  pipeline with gap replay is tracked in
+  [#268](https://github.com/ankurah/ankurah/issues/268).
 
 ## Where these promises come from
 
-The convergence and determinism claims are pinned by tests that apply the
-same events in opposite orders on independent nodes and assert identical
-results, plus a randomized property test checking comparison verdicts
-against a brute-force oracle. The mechanics live in the contributor
-section: [Causal Comparison](causal-comparison.md) computes the
-classification table above, [The Compare-Apply Cycle](../internals/compare-apply-cycle.md)
+Current-main backend conformance tests compare independent backend instances
+under alternate valid layer schedules, and a randomized property test checks
+comparison verdicts against a brute-force reachability oracle. The suite does
+not yet include an end-to-end test that replays opposite event orders through
+two independent `Node` instances. The mechanics live in the contributor
+section: [Causal Comparison](causal-comparison.md) computes the classification
+table above, [The Compare-Apply Cycle](../internals/compare-apply-cycle.md)
 traces one merge end to end, and [LWW Merge Resolution](../internals/lww-merge.md)
 derives the determinism argument formally.

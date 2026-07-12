@@ -291,6 +291,41 @@ copy_landing_assets() {
     cp -r images book/ 2>/dev/null || true
 }
 
+# Keep every displayed example synchronized, not only the landing page. Using
+# an array preserves each path as one argument and works with macOS's Bash 3.2.
+run_liaison() {
+    local targets=("$SCRIPT_DIR/index.html")
+    local file
+    while IFS= read -r file; do
+        targets+=("$file")
+    done < <(find "$SCRIPT_DIR/src" -type f -name '*.md' -print | sort)
+    liaison "${targets[@]}"
+}
+
+refresh_transclusions() {
+    local liaison_output
+    update_status liaison "building: transcluding"
+    if ! liaison_output=$(run_liaison 2>&1); then
+        update_status liaison "failed: transclude error"
+        printf '%s\n' "$liaison_output" >&2
+        return 1
+    fi
+
+    if printf '%s\n' "$liaison_output" | grep -q "Updated"; then
+        update_status mdbook "building: mdbook"
+        if ! mdbook build > /dev/null 2>&1; then
+            update_status mdbook "failed: build error"
+            return 1
+        fi
+        update_status mdbook "ready"
+        copy_landing_assets
+        echo -e "${GREEN}[WATCHER]${NC} Examples transcluded and site rebuilt"
+    else
+        echo -e "${YELLOW}[WATCHER]${NC} No transclusion changes needed"
+    fi
+    update_status liaison "ready"
+}
+
 # Config for the `bun x serve` fallback. By default `serve` rewrites *.html
 # URLs to extension-less "clean URLs" via 301 redirects (and /index.html ->
 # /), which changes the contract: a plain request for /what-is-ankurah.html
@@ -318,10 +353,10 @@ JSON
 
 echo -e "${BLUE}[1/3]${NC} Running liaison to transclude code examples..."
 update_status liaison "building: transcluding"
-if ! liaison index.html 2>&1 | grep -E "(Updated|No changes)" > /dev/null; then
+if ! liaison_output=$(run_liaison 2>&1); then
     echo -e "${RED}✗${NC} liaison failed"
     update_status liaison "failed: transclude error"
-    liaison index.html  # Show the actual error
+    printf '%s\n' "$liaison_output" >&2
     exit 1
 fi
 update_status liaison "ready"
@@ -437,34 +472,18 @@ echo -e "${YELLOW}Starting example code watcher...${NC}"
 if command -v fswatch &> /dev/null; then
     fswatch -o example/ 2>/dev/null | while read -r _; do
         echo -e "${BLUE}[WATCHER]${NC} Example code changed, running liaison..."
-        update_status liaison "building: transcluding"
-        if liaison index.html 2>&1 | grep -q "Updated"; then
-            cp index.html book/ 2>/dev/null || true
-            update_status liaison "ready"
-            echo -e "${GREEN}[WATCHER]${NC} Code examples transcluded and copied"
-        else
-            update_status liaison "ready"
-            echo -e "${YELLOW}[WATCHER]${NC} No changes needed"
-        fi
+        refresh_transclusions || echo -e "${RED}[WATCHER]${NC} Example refresh failed"
     done &
     PIDS+=("$!")
 elif command -v inotifywait &> /dev/null; then
     while inotifywait -q -r -e modify,create,delete example/ 2>/dev/null; do
         echo -e "${BLUE}[WATCHER]${NC} Example code changed, running liaison..."
-        update_status liaison "building: transcluding"
-        if liaison index.html 2>&1 | grep -q "Updated"; then
-            cp index.html book/ 2>/dev/null || true
-            update_status liaison "ready"
-            echo -e "${GREEN}[WATCHER]${NC} Code examples transcluded and copied"
-        else
-            update_status liaison "ready"
-            echo -e "${YELLOW}[WATCHER]${NC} No changes needed"
-        fi
+        refresh_transclusions || echo -e "${RED}[WATCHER]${NC} Example refresh failed"
     done &
     PIDS+=("$!")
 else
     echo -e "${YELLOW}⚠ File watcher not available (install fswatch for auto-rebuild)${NC}"
-    echo -e "${YELLOW}  Example code changes require manual: liaison index.html && cp index.html book/${NC}"
+    echo -e "${YELLOW}  Example code changes require rerunning ./dev.sh (or liaison across index.html + src, then mdbook build)${NC}"
 fi
 
 # Register with sutra now that the supervisor (this script) and its port are
