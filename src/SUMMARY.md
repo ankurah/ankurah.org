@@ -24,6 +24,7 @@
 - [Overview](architecture.md)
 - [Concurrency: The Mental Model](concurrency/index.md)
 - [Conflict Resolution & Guarantees](concurrency/guarantees.md)
+- [Event Generations](concurrency/event-generations.md)
 - [Glossary](glossary.md)
 - [Design Goals](design-goals.md)
 

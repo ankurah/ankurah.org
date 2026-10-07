@@ -131,6 +131,10 @@ The concurrency system is built to keep a small set of promises:
 
 - [Conflict Resolution & Guarantees](guarantees.md) states the contract all
   of this machinery upholds, and what is deliberately not promised.
+- [Event Generations](event-generations.md) explains the depth annotation
+  that 0.10 adds to every clock tip, how an update derives its own
+  generation from its parents, and what a node checks when a peer's clock
+  arrives.
 - [Choosing a Merge Strategy](../models/merge-strategy.md) covers the
   per-field LWW-vs-Yrs decision from the modeling side.
 - In the contributor Internals section,

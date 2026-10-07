@@ -140,6 +140,10 @@ The causal event history that led to an entity's current state, including branch
 
 The most recent event or concurrent events in an entity's DAG. Nodes track the head as a set because concurrent branches may produce more than one tip.
 
+### Generation
+
+The causal depth of an event: 1 for a genesis event, and one more than the deepest parent's generation for an update. Starting with 0.10, every clock entry pairs an event id with that event's generation. See [Event Generations](concurrency/event-generations.md).
+
 ## Reactivity
 
 ### Signal
