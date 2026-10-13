@@ -1,0 +1,114 @@
+# LWW/comparison branch performance against main
+
+Measured 2026-10-13 against GitHub main `ebdb1727254c675a4d37236ecf23c16c06c4df12` (confirmed remotely before measurement). Candidate: the complete uncommitted review diff of `fix/lww-generation-rank-recut`, patch SHA-256 `387ca056a7bf54ddb16f48bea8529e37cf2171ec879daaaf11a7fd7670b937ab`. This is the combined LWW, application and comparison branch; it is not an ablation of the generation change alone. Main already includes event-generation metadata.
+
+## Method
+
+- Apple M4 Max, 128 GiB, macOS 26.7.1; rustc 1.97.0-nightly (ca9a134e0 2026-04-26), Criterion 0.5.1. Both use the repository release profile, lockfile and same compiler.
+- Source copies are independent of Daniel's review checkout. Main and branch have separate build targets. Timed workloads run serially, with compilation outside the measured region.
+- One Criterion run per DAG configuration and two runs per end-to-end revision (main/branch, then branch/main): one-second warm-up, three-second target measurement, 40 samples for DAG/commit cases; lane code overrides to 30 samples for subscriber latency and 10 for bridge catch-up. Criterion extends measurements when needed.
+- Tables use the actual `median.point_estimate` in Criterion JSON, not the CLI interval's middle number (which can be its regression slope estimate). Median 95% intervals, raw samples and means are retained in `raw/` and `results.json`.
+- This was an exploratory run on Daniel's working machine, not an isolated performance runner. Large differences are meaningful evidence; small percentages need repeated alternating runs before being treated as durable trends. No cross-machine comparison with the old July timings was made.
+- Comparison fixtures contain no property operations and read an in-memory map. They measure traversal and layer preparation, not storage latency, LWW property folding, or total application throughput. The layers group includes comparison. Criterion's reported elements/sec is not used: its denominator is fixture size, not actual events read.
+
+## Existing suite, unchanged timing boundary
+
+The long-standing `event_dag` suite clones the entire fixture store inside each timed iteration. These results preserve that behavior. Speedup is main median divided by candidate median.
+
+| Case | Main (µs) | Branch (µs) | Main / branch |
+|---|---:|---:|---:|
+| `compare/diamond_chain/16` | 78.707 | 7.479 | 10.52× |
+| `compare/diamond_chain/4` | 19.698 | 6.422 | 3.07× |
+| `compare/diamond_chain/64` | 322.767 | 12.339 | 26.16× |
+| `compare/disjoint/10` | 27.976 | 20.751 | 1.35× |
+| `compare/disjoint/100` | 285.589 | 194.867 | 1.47× |
+| `compare/linear_deep/10` | 15.485 | 7.606 | 2.04× |
+| `compare/linear_deep/100` | 140.410 | 81.840 | 1.72× |
+| `compare/linear_deep/1000` | 2,745.559 | 846.830 | 3.24× |
+| `compare/wide_antichain/16` | 30.250 | 15.477 | 1.95× |
+| `compare/wide_antichain/4` | 10.752 | 4.638 | 2.32× |
+| `compare/wide_antichain/64` | 109.658 | 57.979 | 1.89× |
+| `layers/diamond_chain_drain/16` | 91.946 | 8.321 | 11.05× |
+| `layers/diamond_chain_drain/4` | 22.770 | 7.228 | 3.15× |
+| `layers/diamond_chain_drain/64` | 386.784 | 13.519 | 28.61× |
+
+## Supplemental comparison-only timing
+
+The same workloads borrow the immutable event store instead of cloning it; both revisions use the same adjustment. Relation assertions are enabled for these runs. Event reads are counted once per fixture outside timed iterations, using a separate getter. The modified source is `main/core/benches/event_dag_borrowed.rs` and `branch/core/benches/event_dag_borrowed.rs`.
+
+| Case | Main (µs) | Branch (µs) | Main / branch |
+|---|---:|---:|---:|
+| `compare/diamond_chain/16` | 78.759 | 6.042 | 13.04× |
+| `compare/diamond_chain/4` | 19.662 | 6.022 | 3.27× |
+| `compare/diamond_chain/64` | 323.346 | 6.116 | 52.87× |
+| `compare/disjoint/10` | 27.834 | 20.578 | 1.35× |
+| `compare/disjoint/100` | 285.291 | 197.804 | 1.44× |
+| `compare/linear_deep/10` | 15.810 | 7.509 | 2.11× |
+| `compare/linear_deep/100` | 142.776 | 80.268 | 1.78× |
+| `compare/linear_deep/1000` | 2,732.900 | 836.425 | 3.27× |
+| `compare/wide_antichain/16` | 30.411 | 15.412 | 1.97× |
+| `compare/wide_antichain/4` | 10.795 | 4.700 | 2.30× |
+| `compare/wide_antichain/64` | 109.409 | 57.721 | 1.90× |
+| `layers/diamond_chain_drain/16` | 92.139 | 6.897 | 13.36× |
+| `layers/diamond_chain_drain/4` | 22.769 | 6.882 | 3.31× |
+| `layers/diamond_chain_drain/64` | 388.149 | 6.855 | 56.63× |
+
+### Event reads
+
+| Comparison | Main reads | Branch reads |
+|---|---:|---:|
+| `linear_deep/10` | 10 | 9 |
+| `linear_deep/100` | 100 | 99 |
+| `linear_deep/1000` | 1000 | 999 |
+| `diamond_chain/4` | 12 | 3 |
+| `diamond_chain/16` | 48 | 3 |
+| `diamond_chain/64` | 192 | 3 |
+| `wide_antichain/4` | 6 | 5 |
+| `wide_antichain/16` | 18 | 17 |
+| `wide_antichain/64` | 66 | 65 |
+| `disjoint/10` | 20 | 20 |
+| `disjoint/100` | 200 | 200 |
+
+The shared-history case compares the two concurrent tips of the final diamond; their meet is the preceding join. Main reads 12, 48 and 192 events for 4, 16 and 64 diamonds. The branch reads only both tips and their meet (three events), and its borrowed-fixture time stays approximately flat. This is direct evidence of the intended pruning benefit.
+
+A linear head-to-root comparison must still read the intervening events (999 versus 1,000 at depth 1,000). Its speedup therefore reflects other traversal/accumulation overhead improvements, not avoidance of that chain. Disjoint histories still require the full walk. Multiple unresolved meets and saturated generations are not benchmarked in this pass.
+
+## Real-node end-to-end lanes
+
+The existing `lane_perf` target was stale on main: fallible `.read()` and `.body()` calls were not unwrapped, and synchronous `.context()` raced node readiness. In both isolated copies only, the harness now unwraps the existing fallible APIs and awaits `context_async` during setup outside the measured region. Exact patches are retained as `main-lane-harness.patch` and `branch-lane-harness.patch`. No production source was repaired for measurement.
+
+First pair (main then branch):
+
+| Case | Main (µs) | Branch (µs) | Main / branch |
+|---|---:|---:|---:|
+| `bridge_catchup/100` | 2,879.496 | 3,073.362 | 0.94× |
+| `bridge_catchup/1000` | 33,598.110 | 36,060.682 | 0.93× |
+| `commit_to_subscriber_latency/server_edit_to_client_change` | 120.982 | 108.940 | 1.11× |
+| `single_writer_commit/durable_lww_overwrite` | 37.589 | 40.688 | 0.92× |
+
+Repeat in reverse order (branch then main):
+
+| Case | Main (µs) | Branch (µs) | Main / branch |
+|---|---:|---:|---:|
+| `bridge_catchup/100` | 3,038.680 | 3,006.776 | 1.01× |
+| `bridge_catchup/1000` | 32,982.279 | 36,337.132 | 0.91× |
+| `commit_to_subscriber_latency/server_edit_to_client_change` | 113.578 | 109.342 | 1.04× |
+| `single_writer_commit/durable_lww_overwrite` | 38.071 | 39.912 | 0.95× |
+
+Local commits are 8.2% and 4.8% slower in the two pairs. Catch-up at 1,000 events is 7.3% and 10.2% slower. Those repeatable costs merit attribution before making an overall performance claim. Subscriber latency is 10.0% and 3.7% faster; 100-event catch-up is 6.7% slower then 1.0% faster, so that smaller catch-up result is inconclusive. No profiling was performed to assign these differences to a particular implementation change.
+
+Lanes use real multithreaded Tokio, Sled test storage and LocalProcessConnection. Catch-up includes reconnect, bridge production, replay and persistence; its existing final-value and stored-event-count assertions must pass. No public-network latency is simulated. Only the listed lanes ran: no fresh-fetch, subscription-establishment, 5,000-event catch-up or large-property-count measurement is claimed.
+
+## History and CI follow-up
+
+- DAG Criterion skeleton introduced July 4 (`94c60395`), full suite that day (`893721a9`); checked-in reference at `core/benches/BASELINE.md`.
+- End-to-end lane instrument introduced July 6 (`ba50ba54`, originally named volume_perf); historical reference at `specs/concurrency/LANE-BASELINE.md`.
+- Current CI runs DAG smoke benchmarks for relevant PRs and manual dispatches, with 30-day Criterion artifacts. It does not yet create a durable main/release performance timeline.
+- See `dashboard-followup.md` for the proposed post-merge static-site dashboard, stable-runner/harness requirements and existing related FWD tasks. No deployment or new FWD task was made.
+
+## Evidence and limitations
+
+- `branch.diff`, `branch-source-hashes.json`, `metadata.json`: exact source identification. The two source snapshots and supplemental harnesses are retained here.
+- `runs.json`, `lane-runs.json`, `lane-repeat-runs.json`, `*-clone.log`, `*-borrowed.log`, `*-lanes.log`: commands/results. Initial lane compile/readiness failures are preserved separately and are not successes.
+- `discarded-shared-cache-run.log` is deliberately excluded. An initial attempted branch run shared Cargo's main build target; copied source mtimes caused reuse of the main executable. It was identified before reporting numbers and replaced with a freshly built independent candidate target. No result from that attempt is included.
+- No reviewed source, index, staging, signed commit or public branch was changed by this measurement pass. The pending human review and independent three-agent final review retain their agreed sequence.
