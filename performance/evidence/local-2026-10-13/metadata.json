@@ -1,0 +1,16 @@
+{
+  "main_sha": "ebdb1727254c675a4d37236ecf23c16c06c4df12",
+  "branch": "fix/lww-generation-rank-recut",
+  "diff_sha256": "387ca056a7bf54ddb16f48bea8529e37cf2171ec879daaaf11a7fd7670b937ab",
+  "tracked_files": 727,
+  "hardware": "Apple M4 Max, 128 GiB",
+  "os": "macOS 26.7.1 (25G241)",
+  "rustc": "1.97.0-nightly (ca9a134e0 2026-04-26)",
+  "suite": "event_dag, compare/layers",
+  "criterion": {
+    "samples": 40,
+    "warmup_s": 1,
+    "measurement_s": 3
+  },
+  "notes": "Independent source snapshots; review worktree and index untouched."
+}

@@ -1,0 +1,40 @@
+#performance-dashboard { margin: 2.4rem 0 3rem; }
+#performance-dashboard [hidden] { display: none !important; }
+.perf-controls { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 1.2rem; margin: 2rem 0; }
+.perf-controls label { display: flex; flex-direction: column; gap: .6rem; font-size: 1.35rem; font-weight: 600; }
+.perf-controls select { min-width: 0; width: 100%; padding: .8rem; border: 1px solid var(--table-border-color); border-radius: .4rem; color: var(--fg); background: var(--bg); font: inherit; font-weight: 400; }
+.perf-series-control { grid-column: 1 / -1; }
+#performance-status, #perf-context { padding: 1rem 1.3rem; background: var(--quote-bg); border-left: .3rem solid var(--links); }
+#performance-status { font-size: 1.35rem; }
+.perf-chart-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-top: 2rem; }
+.perf-chart-heading h2 { margin: 0; font-size: 2.1rem; }
+#perf-count, #perf-series-notes, #perf-chart-note, .perf-legend { font-size: 1.3rem; }
+.perf-chart-scroll, .perf-table-scroll { overflow-x: auto; }
+#perf-chart { display: block; width: 100%; min-width: var(--chart-width, 780px); color: var(--fg); }
+#perf-chart text { fill: currentColor; font-family: var(--main-font); font-size: 12px; }
+#perf-chart .perf-grid { stroke: var(--table-border-color); stroke-width: 1; }
+#perf-chart .perf-line { fill: none; stroke: var(--links); stroke-width: 2; opacity: .65; }
+#perf-chart .perf-interval { stroke: var(--links); stroke-width: 2; }
+#perf-chart .perf-point { stroke: var(--links); stroke-width: 2; fill: var(--bg); cursor: pointer; }
+#perf-chart .perf-point-main, #perf-chart .perf-point-pr, #perf-chart .perf-point-release { fill: var(--links); }
+#perf-chart .perf-point:focus, #perf-chart .perf-point:hover { stroke: var(--fg); stroke-width: 3; outline: none; }
+.perf-legend { display: flex; flex-wrap: wrap; gap: .6rem 1.5rem; }
+.perf-detail { border: 1px solid var(--table-border-color); border-radius: .5rem; padding: 1.4rem; margin: 1.8rem 0; overflow-wrap: anywhere; }
+.perf-detail h3 { margin: 0 0 1rem; font-size: 1.7rem; }
+.perf-detail p { margin: .6rem 0; }
+.perf-detail dl { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: .5rem 1rem; margin: 1.2rem 0; font-size: 1.3rem; }
+.perf-detail dt { font-weight: 600; }
+.perf-detail dd { margin: 0; }
+.perf-table-wrap summary, #perf-attempts summary, #perf-coverage summary { cursor: pointer; padding: .8rem 0; font-weight: 600; }
+#perf-table { width: 100%; font-size: 1.25rem; margin: 1rem 0; }
+#perf-table th { text-align: left; }
+#perf-table td { padding: .7rem; vertical-align: top; }
+#perf-table caption { text-align: left; padding-bottom: .8rem; }
+#perf-table .perf-source { display: block; overflow-wrap: anywhere; }
+#perf-table button { font: inherit; color: var(--links); border: 0; background: transparent; text-decoration: underline; cursor: pointer; padding: 0; }
+#performance-dashboard :focus-visible { outline: 2px solid var(--links); outline-offset: 3px; }
+#perf-empty { padding: 2rem; border: 1px solid var(--table-border-color); border-radius: .5rem; }
+@media (max-width: 650px) { .perf-controls { grid-template-columns: 1fr; } .perf-series-control { grid-column: auto; } .perf-chart-heading { display: block; } .perf-detail dl { grid-template-columns: 1fr; gap: .3rem; } .perf-detail dd { margin-bottom: .7rem; } }
+@media print { .perf-controls, #perf-detail { display: none; } .perf-chart-scroll, .perf-table-scroll { overflow: visible; } #perf-chart { min-width: 0; } }
+
+#perf-chart-title { overflow-wrap: anywhere; min-width: 0; }
