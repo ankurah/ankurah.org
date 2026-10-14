@@ -47,9 +47,14 @@ test('different values cannot reuse an immutable run ID', () => {
     assert.throws(() => model.mergeHistories([a, b]), /Conflicting/);
 });
 
-test('evidence class, runner, compiler and explicit semantics separate lines', () => {
+test('environment, recorded settings and explicit semantics separate lines', () => {
     const a = fixture().runs[0];
-    for (const change of [r => r.kind = 'hosted', r => r.runner.id = 'other', r => r.compiler.version = 'other', r => r.measurements[0].series = 'new-semantics']) {
+    for (const change of [
+        r => r.runner.id = 'other', r => r.runner.hardware = 'Other CPU', r => r.runner.os = 'Other OS',
+        r => r.compiler.target = 'other-architecture', r => r.compiler.version = 'other', r => r.profile = 'other',
+        r => r.parameters.network_latency_ms = 100, r => r.measurements[0].parameters.network_latency_ms = 100,
+        r => r.measurements[0].series = 'new-semantics'
+    ]) {
         const b = copy(a); change(b);
         assert.notEqual(model.seriesKey(a, a.measurements[0]), model.seriesKey(b, b.measurements[0]));
     }
@@ -57,6 +62,32 @@ test('evidence class, runner, compiler and explicit semantics separate lines', (
     assert.ok(layer.some(p => p.m.workload.includes('drain')));
     assert.ok(layer.some(p => p.m.workload.includes('prepare') && p.m.original_workload.includes('drain')));
     assert.equal(new Set(layer.filter(p => p.m.workload.includes('prepare')).map(p => p.run.source.patch_sha256)).size, 1);
+});
+
+test('all environments are visible by default, with compatible runs grouped independently of collection source', () => {
+    const local = fixture('local').runs[0];
+    local.measurements[0].parameters.network_latency_ms = 0;
+    const ci = copy(local); ci.id = 'ci'; ci.kind = 'hosted'; ci.source.sha = 'b'.repeat(40);
+    const otherCPU = copy(local); otherCPU.id = 'other-cpu'; otherCPU.kind = 'stable';
+    otherCPU.runner.id = 'other-machine'; otherCPU.runner.hardware = 'AMD EPYC';
+    const latency = copy(local); latency.id = 'latency'; latency.measurements[0].parameters.network_latency_ms = 100;
+    const history = model.validateHistory({ schema_version: 1, runs: [local, ci, otherCPU, latency] });
+    const selection = { workload: local.measurements[0].workload, unit: 'ns' };
+    const all = model.points(history, selection);
+    assert.deepEqual(all.map(p => p.run.id), ['local', 'ci', 'other-cpu', 'latency']);
+    assert.deepEqual([...model.groupSeries(all).values()].map(group => group.map(p => p.run.id)), [['local', 'ci'], ['other-cpu'], ['latency']]);
+    assert.deepEqual(model.points(history, { ...selection, environment: model.environmentKey(local) }).map(p => p.run.id), ['local', 'ci', 'latency']);
+    assert.deepEqual(model.points(history, { ...selection, series: all[0].series }).map(p => p.run.id), ['local', 'ci']);
+    assert.match(model.environmentLabel(otherCPU), /AMD EPYC/);
+});
+
+test('missing source dates do not hide measurements or pretend their measurement date is a source date', () => {
+    const dated = fixture('dated').runs[0], undated = fixture('undated').runs[0];
+    undated.source.sha = 'b'.repeat(40); delete undated.source.committed_at;
+    const history = model.validateHistory({ schema_version: 1, runs: [undated, dated] });
+    const points = model.points(history, { workload: dated.measurements[0].workload, unit: 'ns' });
+    assert.deepEqual(model.orderPoints(points).map(p => p.run.id), ['dated', 'undated']);
+    assert.equal(model.sourceDate(undated), undefined);
 });
 
 test('historical source date sorts backfills independently of measurement date', () => {
@@ -152,11 +183,11 @@ test('unknown catalog workloads appear without samples and their first sample fi
     const registered = catalog([{ id: workload, unit: 'ns' }], 'discovered');
     const before = model.mergeHistories([registered]);
     assert.equal(model.benchmarkRows(before)[0].id, workload);
-    assert.equal(model.points(before, { kind: 'local', workload, unit: 'ns' }).length, 0);
+    assert.equal(model.points(before, { workload, unit: 'ns' }).length, 0);
     const measured = fixture(); measured.runs[0].measurements[0].workload = workload;
     const after = model.mergeHistories([before, measured]);
     assert.equal(model.benchmarkRows(after).length, 1);
-    assert.equal(model.points(after, { kind: 'local', workload, unit: 'ns' }).length, 1);
+    assert.equal(model.points(after, { workload, unit: 'ns' }).length, 1);
 });
 
 test('failed targets stay visible and an empty or renamed catalog never hides measured history', () => {

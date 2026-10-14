@@ -4,13 +4,9 @@
     if (!root) return;
     const model = window.PerformanceModel;
     const get = id => document.getElementById(id);
-    const controls = { kind: get('perf-kind'), workload: get('perf-workload'), unit: get('perf-unit'), series: get('perf-series') };
-    const explanations = {
-        local: 'Local working-machine measurements. Each line uses one workload definition and measurement configuration.',
-        hosted: 'Hosted CI · shared machines. Use these measurements to inspect execution; runner jitter limits performance claims.',
-        stable: 'Stable runner · only points collected under an explicitly configured, consistent environment appear here.'
-    };
+    const controls = { environment: get('perf-environment'), workload: get('perf-workload'), unit: get('perf-unit'), series: get('perf-series') };
     let history;
+    let seriesDescriptions = new Map();
     const number = value => new Intl.NumberFormat('en', { maximumSignificantDigits: 5 }).format(value);
     const element = (tag, text, parent) => {
         const node = document.createElement(tag);
@@ -43,27 +39,42 @@
         return markers.slice().sort((a, b) => rank(a) - rank(b)).slice(0, 3);
     }
     function selection() { return Object.fromEntries(Object.entries(controls).map(([name, control]) => [name, control.value])); }
-    function update(changed = 'kind') {
-        get('perf-context').textContent = explanations[controls.kind.value];
-        if (changed === 'kind') optionList(controls.workload, workloadRows().map(row => [row.id, row.targetOnly ? row.target.id + ' · awaiting workloads' : row.id]), 'compare/diamond_chain/64');
+    function describeSeries(points) {
+        const first = [...model.groupSeries(points).values()].map(group => group[0]);
+        const settings = first.map(({ run, measurement }) => ({ ...run.parameters, ...measurement.parameters }));
+        const differences = [...new Set(settings.flatMap(Object.keys))]
+            .filter(key => new Set(settings.filter(values => values[key] !== undefined).map(values => JSON.stringify(values[key]))).size > 1);
+        return new Map(first.map(({ run, series }, i) => [series, [
+            `${i + 1}. ${model.environmentLabel(run)}`, run.harness.description || run.harness.id,
+            `${run.compiler.version} · ${run.profile}`,
+            ...differences.map(key => `${key.replaceAll('_', ' ')}: ${JSON.stringify(settings[i][key]) ?? 'not recorded'}`)
+        ].join(' · ')]));
+    }
+    function update(changed = 'history') {
+        if (changed === 'history') optionList(controls.workload, workloadRows().map(row => [row.id, row.targetOnly ? row.target.id + ' · awaiting workloads' : row.id]), 'compare/diamond_chain/64');
         const row = workloadRows().find(row => row.id === controls.workload.value);
-        if (changed === 'kind' || changed === 'workload') optionList(controls.unit, (row?.units || []).map(value => [value, value === 'ns' ? 'Time' : 'Event reads']), 'ns');
-        const candidates = model.points(history, selection());
+        if (changed === 'history' || changed === 'workload') optionList(controls.unit, (row?.units || []).map(value => [value, value === 'ns' ? 'Time' : 'Event reads']), 'ns');
+        const candidates = model.points(history, { workload: controls.workload.value, unit: controls.unit.value });
+        seriesDescriptions = describeSeries(candidates);
+        const environments = new Map(candidates.map(({ run }) => [model.environmentKey(run), model.environmentLabel(run)]));
+        optionList(controls.environment, [['', 'All environments'], ...environments], '');
         const series = new Map();
         for (const point of candidates) {
-            const run = point.run;
-            if (!series.has(point.series)) series.set(point.series, [point.series, `${run.harness.description || run.harness.id} · ${run.runner.label} · ${run.compiler.version} · ${point.measurement.series}`]);
+            if (controls.environment.value && model.environmentKey(point.run) !== controls.environment.value) continue;
+            if (!series.has(point.series)) series.set(point.series, [point.series, seriesDescriptions.get(point.series)]);
         }
-        const historicalSeries = candidates.find(point => point.run.markers.some(marker => ['release', 'pr'].includes(marker.kind)))?.series;
-        if (changed !== 'series') optionList(controls.series, [...series.values()], historicalSeries || [...series.keys()].find(key => key.includes('borrowed')));
-        const selected = model.orderPoints(candidates.filter(point => point.series === controls.series.value && model.sourceDate(point.run)));
+        optionList(controls.series, [['', 'All configurations'], ...series.values()], '');
+        const selected = model.orderPoints(model.points(history, selection()));
+        get('perf-context').textContent = controls.environment.value || controls.series.value
+            ? 'Showing the selected environment/configuration. Clear either filter to include more measurements.'
+            : 'Showing all environments and configurations. Each line connects measurements taken under compatible conditions.';
         get('perf-results').hidden = !selected.length;
         get('perf-empty').hidden = !!selected.length;
         get('perf-empty').textContent = row?.targetOnly
             ? `${row.target.id} is a registered Cargo benchmark target (${row.target.status}). ${row.target.reason || 'Workload names will appear after the instrument compiles and enumerates them.'} No values have been inferred.`
-            : `No ${controls.kind.value} measurements are available for this workload.${row?.target ? ' It is registered in the benchmark catalog; its history begins with its first actual measurement.' : ' Unmeasured history is unknown.'} Select another evidence class to inspect any available results.`;
-        for (const control of [controls.workload, controls.unit, controls.series]) control.disabled = !control.options.length;
-        const attempts = history.attempts.filter(attempt => attempt.kind === controls.kind.value);
+            : `No measurements are available for this workload and selection.${row?.target ? ' It is registered in the benchmark catalog; its history begins with its first actual measurement.' : ' Unmeasured history is unknown.'}`;
+        for (const control of Object.values(controls)) control.disabled = !control.options.length;
+        const attempts = history.attempts;
         get('perf-attempts').hidden = !attempts.length;
         const list = get('perf-attempts').querySelector('ul');
         list.replaceChildren();
@@ -128,11 +139,11 @@
         }
     }
     function renderCoverage() {
-        const entries = (history.coverage || []).filter(entry => !entry.kind || entry.kind === controls.kind.value);
+        const entries = history.coverage || [];
         get('perf-coverage').hidden = !entries.length;
         const counts = new Map();
         for (const entry of entries) counts.set(entry.status, (counts.get(entry.status) || 0) + 1);
-        get('perf-coverage-summary').textContent = `${entries.length} discovered source revisions · ${[...counts].map(([status, count]) => `${count} ${status}`).join(' · ')}. Coverage is for the selected evidence class; select a matching series above to see its actual points.`;
+        get('perf-coverage-summary').textContent = `${entries.length} source/collection entries · ${[...counts].map(([status, count]) => `${count} ${status}`).join(' · ')}. This inventory includes all collection sources, independently of the chart filters.`;
         const list = get('perf-coverage').querySelector('ul');
         list.replaceChildren();
         for (const entry of entries) {
@@ -148,6 +159,21 @@
         return node;
     }
     function draw(points) {
+        const groups = model.groupSeries(points);
+        const colors = ['#2563eb', '#b45309', '#7c3aed', '#047857', '#be185d', '#087e8b'];
+        const seriesStyles = new Map([...seriesDescriptions.keys()].map((key, i) => [key, {
+            color: colors[i % colors.length], dash: ['', '8 4', '2 3', '10 3 2 3'][i % 4]
+        }]));
+        const legend = get('perf-series-legend');
+        legend.replaceChildren();
+        for (const [key, description] of seriesDescriptions) {
+            if (!groups.has(key)) continue;
+            const item = element('li', undefined, legend);
+            const style = seriesStyles.get(key);
+            const swatch = svgElement('svg', { viewBox: '0 0 40 12', 'aria-hidden': 'true' }, item);
+            svgElement('line', { x1: 0, x2: 40, y1: 6, y2: 6, stroke: style.color, 'stroke-width': 3, 'stroke-dasharray': style.dash }, swatch);
+            element('span', description, item);
+        }
         const maximum = Math.max(...points.map(p => p.measurement.upper ?? p.measurement.median));
         const unit = model.displayUnit(controls.unit.value, maximum);
         const roughStep = maximum > 0 ? maximum * 1.1 / 4 : 0.25;
@@ -171,8 +197,8 @@
         };
         const y = value => 285 - value / maxY * 235;
         get('perf-chart-title').textContent = controls.workload.value;
-        get('perf-count').textContent = `${points.length} run${points.length === 1 ? '' : 's'} · ${revisions.length} source revision${revisions.length === 1 ? '' : 's'}`;
-        get('perf-series-notes').textContent = `${points[0].run.harness.description || points[0].run.harness.id} · ${unit.label} · lower is less work`;
+        get('perf-count').textContent = `${points.length} measurements · ${revisions.length} revisions · ${groups.size} configurations`;
+        get('perf-series-notes').textContent = `${unit.label} · lower is less work · colors and line patterns distinguish configurations`;
         const exact = controls.unit.value === 'reads';
         get('perf-chart-note').textContent = (exact ? 'Exact getter calls in one untimed fixture execution. No confidence interval.' : 'Bars show each run’s confidence interval for the median. Repeats are offset slightly; the line follows the first recorded run at each revision.') + ' Revisions are evenly spaced in source-date order; horizontal distance does not represent elapsed time.';
         const svg = get('perf-chart');
@@ -187,8 +213,15 @@
             svgElement('line', { x1: 76, x2: chartWidth - 52, y1: y(value), y2: y(value), class: 'perf-grid' }, svg);
             svgElement('text', { x: 66, y: y(value) + 4, 'text-anchor': 'end' }, svg, number(value / unit.divisor));
         }
-        const firstRuns = revisions.map(key => repeats.get(key)[0]);
-        if (revisions.length > 1) svgElement('polyline', { points: firstRuns.map(p => `${x(p)},${y(p.measurement.median)}`).join(' '), class: 'perf-line' }, svg);
+        for (const [key, group] of groups) {
+            const firstRuns = new Map();
+            for (const point of group) if (!firstRuns.has(model.sourceKey(point.run))) firstRuns.set(model.sourceKey(point.run), point);
+            const style = seriesStyles.get(key);
+            if (firstRuns.size > 1) svgElement('polyline', {
+                points: [...firstRuns.values()].map(p => `${x(p)},${y(p.measurement.median)}`).join(' '),
+                class: 'perf-line', style: `--series-color: ${style.color}`, 'stroke-dasharray': style.dash
+            }, svg);
+        }
         let lastLabelX = -Infinity;
         const finalLabelX = positions.get(revisions[revisions.length - 1]);
         for (let i = 0; i < revisions.length; i++) {
@@ -198,7 +231,7 @@
             if (i !== revisions.length - 1 && (labelX - lastLabelX < 160 || (i > 0 && finalLabelX - labelX < 160))) continue;
             lastLabelX = labelX;
             const point = repeats.get(revisions[i])[0];
-            svgElement('text', { x: positions.get(revisions[i]), y: 312, 'text-anchor': 'middle' }, svg, model.sourceDate(point.run).slice(0, 10));
+            svgElement('text', { x: positions.get(revisions[i]), y: 312, 'text-anchor': 'middle' }, svg, model.sourceDate(point.run)?.slice(0, 10) || 'Date not recorded');
             const markers = [...new Map(repeats.get(revisions[i]).flatMap(p => p.run.markers).map(marker => [marker.kind + ':' + marker.label, marker])).values()];
             const label = markers.length ? visibleMarkers(markers)[0].label + (markers.length > 1 ? ` +${markers.length - 1}` : '') : sourceLabel(point.run, true);
             const anchor = i === revisions.length - 1 && revisions.length > 1 ? 'end' : 'middle';
@@ -206,12 +239,13 @@
         }
         for (const point of points) {
             const m = point.measurement, cx = x(point), cy = y(m.median);
+            const style = `--series-color: ${seriesStyles.get(point.series).color}`;
             if (!exact) {
-                svgElement('line', { x1: cx, x2: cx, y1: y(m.lower), y2: y(m.upper), class: 'perf-interval' }, svg);
-                for (const value of [m.lower, m.upper]) svgElement('line', { x1: cx - 5, x2: cx + 5, y1: y(value), y2: y(value), class: 'perf-interval' }, svg);
+                svgElement('line', { x1: cx, x2: cx, y1: y(m.lower), y2: y(m.upper), class: 'perf-interval', style }, svg);
+                for (const value of [m.lower, m.upper]) svgElement('line', { x1: cx - 5, x2: cx + 5, y1: y(value), y2: y(value), class: 'perf-interval', style }, svg);
             }
             const kind = point.run.markers.some(m => m.kind === 'release') ? 'release' : point.run.markers.some(m => m.kind === 'pr') ? 'pr' : point.run.markers.some(m => m.kind === 'main') ? 'main' : 'patch';
-            const attrs = { class: `perf-point perf-point-${kind}`, tabindex: '0', role: 'button', 'aria-label': `${sourceLabel(point.run)}, ${number(m.median / unit.divisor)} ${unit.label}. Show measurement details.` };
+            const attrs = { class: `perf-point perf-point-${kind}`, style, tabindex: '0', role: 'button', 'aria-label': `${sourceLabel(point.run)}, ${number(m.median / unit.divisor)} ${unit.label}. ${seriesDescriptions.get(point.series)}. Show measurement details.` };
             let node;
             if (kind === 'release') node = svgElement('polygon', { ...attrs, points: `${cx},${cy - 7} ${cx + 7},${cy} ${cx},${cy + 7} ${cx - 7},${cy}` }, svg);
             else if (kind === 'pr') node = svgElement('rect', { ...attrs, x: cx - 5, y: cy - 5, width: 10, height: 10 }, svg);
@@ -231,14 +265,17 @@
         element('p', m.unit === 'reads' ? 'Exact event reads; one untimed execution.' : `${number(m.confidence_level * 100)}% confidence interval: ${number(m.lower / unit.divisor)}–${number(m.upper / unit.divisor)} ${unit.label}${m.samples ? ` · ${m.samples} samples` : ''}`, detail);
         const metadata = element('dl', undefined, detail);
         const rows = [
-            ['Source date', model.sourceDate(run) + (run.source.patch_sha256 ? ' · study date (uncommitted patch)' : '')],
+            ['Environment', model.environmentLabel(run)],
+            ['Configuration', seriesDescriptions.get(point.series)],
+            ['Source date', (model.sourceDate(run) || 'Not recorded') + (run.source.patch_sha256 ? ' · study date (uncommitted patch)' : '')],
             ['Source', run.source.sha + (run.source.patch_sha256 ? ` + patch ${run.source.patch_sha256}` : '')],
             ['Harness', `${run.harness.id} · SHA-256 ${run.harness.sha256}`],
             ['Compiler', `${run.compiler.version}${run.compiler.target ? ` · ${run.compiler.target}` : ''} · profile ${run.profile}`],
             ['Runner', `${run.runner.label} · ${run.runner.os || 'OS not recorded'} · ${run.runner.hardware || run.runner.id}`],
             ['Lockfile', run.lockfile_sha256 || 'Not recorded'],
             ['Settings', JSON.stringify(m.unit === 'reads' ? m.parameters : { ...run.parameters, ...m.parameters })],
-            ['Measured', run.recorded_at + (run.run_url ? '' : ' · local run, no CI URL')],
+            ['Measured', run.recorded_at],
+            ['Collection', run.kind],
             ['Series', m.series]
         ];
         if (run.source.merged_tree_equivalent) rows.push(['Merged equivalent', `${run.source.merged_tree_equivalent.sha} · identical source tree; measured SHA remains ${run.source.sha.slice(0, 8)}`]);
@@ -266,6 +303,8 @@
             element('small', sourceLabel(run, true), source).className = 'perf-source';
             visibleMarkers(run.markers).forEach(marker => { source.append(' '); link(source, marker.label, marker.url); });
             if (run.markers.length > 3) element('small', ` + ${run.markers.length - 3} markers in details`, source);
+            const environment = element('td', model.environmentLabel(run), row);
+            element('small', `Configuration ${[...seriesDescriptions.keys()].indexOf(point.series) + 1}`, environment).className = 'perf-source';
             element('td', number(m.median / unit.divisor), row);
             element('td', m.unit === 'reads' ? 'Exact count' : `${number(m.lower / unit.divisor)}–${number(m.upper / unit.divisor)} (${number(m.confidence_level * 100)}%)`, row);
             element('td', run.recorded_at.slice(0, 10), row);
@@ -285,18 +324,12 @@
     async function start() {
         const remote = load(root.dataset.remote).then(value => ({ value }), error => ({ error }));
         const backfill = load(root.dataset.backfill).then(value => ({ value }), error => ({ error }));
-        let selectionChanged = false;
         for (const [key, control] of Object.entries(controls)) control.addEventListener('change', () => {
-            selectionChanged = true;
             update(key);
         });
         function show(histories) {
             history = model.mergeHistories(histories);
             renderNavigation();
-            if (!selectionChanged) {
-                controls.kind.value = history.runs.some(run => run.kind === 'stable') ? 'stable' : history.runs.some(run => run.kind === 'local') ? 'local' : 'hosted';
-                controls.series.value = '';
-            }
             root.querySelector('.perf-controls').hidden = false;
             update();
         }

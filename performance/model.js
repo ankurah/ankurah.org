@@ -56,10 +56,14 @@
         return history;
     }
 
+    function canonicalJSON(value) {
+        return JSON.stringify(value, (_, value) => value && typeof value === 'object' && !Array.isArray(value)
+            ? Object.fromEntries(Object.keys(value).sort().map(key => [key, value[key]])) : value);
+    }
+
     function runIdentity(run) {
         const { markers, ...immutable } = run;
-        return JSON.stringify(immutable, (_, value) => value && typeof value === 'object' && !Array.isArray(value)
-            ? Object.fromEntries(Object.keys(value).sort().map(key => [key, value[key]])) : value);
+        return canonicalJSON(immutable);
     }
 
     function mergeHistories(histories) {
@@ -107,23 +111,38 @@
 
     function sourceDate(run) { return run.source.patch_sha256 ? run.recorded_at : run.source.committed_at; }
     function sourceKey(run) { return run.source.sha + ':' + (run.source.patch_sha256 || ''); }
+    function environmentKey(run) {
+        return canonicalJSON([run.runner.id, run.runner.hardware, run.runner.os, run.compiler.target]);
+    }
+    function environmentLabel(run) {
+        return [run.runner.hardware || run.runner.label, run.runner.os || 'OS not recorded', run.compiler.target].filter(Boolean).join(' · ');
+    }
     function seriesKey(run, measurement) {
-        // Metadata also enforces the boundary if a producer reuses a series label accidentally.
-        return JSON.stringify([run.kind, measurement.series, run.runner.id, run.compiler.version, run.profile]);
+        // Keep changed environments/settings separate even if a producer reuses a series label.
+        return canonicalJSON([measurement.series, environmentKey(run), run.compiler.version, run.profile, run.parameters, measurement.parameters]);
     }
     function points(history, selection) {
-        return history.runs.filter(run => run.kind === selection.kind).flatMap(run => run.measurements
+        return history.runs.filter(run => !selection.environment || environmentKey(run) === selection.environment).flatMap(run => run.measurements
             .filter(m => m.workload === selection.workload && m.unit === selection.unit)
-            .map(measurement => ({ run, measurement, series: seriesKey(run, measurement) })));
+            .map(measurement => ({ run, measurement, series: seriesKey(run, measurement) })))
+            .filter(point => !selection.series || point.series === selection.series);
+    }
+    function groupSeries(points) {
+        const groups = new Map();
+        for (const point of points) {
+            if (!groups.has(point.series)) groups.set(point.series, []);
+            groups.get(point.series).push(point);
+        }
+        return groups;
     }
     function orderPoints(input) {
         const revisions = new Map();
         for (const point of input) {
             const key = sourceKey(point.run);
-            const date = sourceDate(point.run) || point.run.recorded_at;
+            const date = sourceDate(point.run);
             if (!revisions.has(key)) revisions.set(key, { key, date });
         }
-        const ordered = [...revisions.values()].sort((a, b) => Date.parse(a.date) - Date.parse(b.date) || a.key.localeCompare(b.key));
+        const ordered = [...revisions.values()].sort((a, b) => (a.date ? Date.parse(a.date) : Infinity) - (b.date ? Date.parse(b.date) : Infinity) || a.key.localeCompare(b.key));
         const position = new Map(ordered.map((revision, i) => [revision.key, i]));
         return input.slice().sort((a, b) => position.get(sourceKey(a.run)) - position.get(sourceKey(b.run)) || Date.parse(a.run.recorded_at) - Date.parse(b.run.recorded_at) || a.run.id.localeCompare(b.run.id));
     }
@@ -142,7 +161,7 @@
         } catch (_) { /* Invalid links are displayed as text. */ }
         return null;
     }
-    const api = { validateHistory, mergeHistories, benchmarkRows, sourceDate, sourceKey, seriesKey, points, orderPoints, displayUnit, safeURL };
+    const api = { validateHistory, mergeHistories, benchmarkRows, sourceDate, sourceKey, environmentKey, environmentLabel, seriesKey, points, groupSeries, orderPoints, displayUnit, safeURL };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.PerformanceModel = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

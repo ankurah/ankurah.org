@@ -1,7 +1,7 @@
 # Benchmark page maintenance
 
 `performance/index.html` is a standalone page with its own benchmark sidebar,
-header navigation, and dependency-free SVG line charts. `performance/model.js` owns validation, evidence/series isolation, chronological
+header navigation, and dependency-free SVG line charts. `performance/model.js` owns validation, environment/configuration grouping, chronological
 source ordering, deduplication, and units; `performance/dashboard.js` renders controls,
 confidence intervals, keyboard-operable points, metadata, and a complete table.
 The CSS follows the existing site colors and contains horizontal chart/table
@@ -25,8 +25,17 @@ lockfile provenance, settings, immutable raw URLs, and workload measurements.
 Only `ns` medians with confidence intervals and exact `reads` counts are rendered.
 A source patch has a separate SHA-256 and never inherits a later commit/PR label.
 
-The chart groups by the producer's explicit compatibility series and additionally
-separates evidence class, compiler, profile, and machine ID. The producer must
+The chart shows every environment and configuration by default for the selected
+workload and unit. Optional environment and configuration filters narrow this view;
+local/CI provenance stays in point details. Each configuration has its own line,
+color and pattern, with a legend and environment column in the table.
+
+Lines group by the producer's explicit compatibility series and additionally
+separate recorded machine identity, hardware/OS, target architecture, compiler,
+profile and run/measurement settings (including network simulation settings when
+recorded). Collection provenance alone does not split lines in the viewer. Legacy
+producer series may still encode collection lanes and remain distinct; the viewer
+does not guess compatibility between different opaque series IDs. The producer must
 change the series identity when fixture meaning, timing boundaries, build
 profile, compiler or runner conditions become incompatible. Source lockfile
 changes remain provenance: changing a source dependency is part of the source
@@ -38,7 +47,8 @@ patches), rather than scaling distance by elapsed time. Longer histories scroll
 horizontally to keep neighboring revisions distinct. Measurement time stays
 separate in the table. At a repeated revision, the line follows its
 first recorded run and all repeats remain individual points. Lines are guides,
-not interpolated observations. Discovered release/PR coverage records include
+not interpolated observations. Runs without source dates remain visible at the
+end with an explicit missing-date label. Discovered release/PR coverage records include
 pending, requested, failed and unsupported states, including unmappable Cargo
 publications. An absent historical date cannot quietly be replaced with the
 measurement date on the chart.

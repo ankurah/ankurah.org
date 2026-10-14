@@ -30,10 +30,10 @@
 <div id="performance-dashboard" data-local="history.json" data-backfill="backfill/history.json" data-remote="https://raw.githubusercontent.com/ankurah/ankurah/benchmark-data/history.json">
 <p id="performance-status" role="status">Loading benchmark history…</p>
 <div class="perf-controls" hidden>
-<label>Evidence<select id="perf-kind"><option value="stable">Stable runner</option><option value="hosted">Hosted CI</option><option value="local">Local runs</option></select></label>
+<label>Environment<select id="perf-environment"><option value="">All environments</option></select></label>
 <label>Measurement<select id="perf-unit"></select></label>
 <label class="perf-workload-control">Workload<select id="perf-workload"></select></label>
-<label class="perf-series-control">Comparable series<select id="perf-series"></select></label>
+<label class="perf-series-control">Configuration<select id="perf-series"><option value="">All configurations</option></select></label>
 </div>
 <p id="perf-context"></p>
 <div id="perf-empty" hidden></div>
@@ -42,9 +42,10 @@
 <p id="perf-series-notes"></p>
 <div class="perf-chart-scroll" tabindex="0" role="region" aria-label="Benchmark chart, scroll horizontally on small screens"><svg id="perf-chart" viewBox="0 0 780 350" role="group" aria-labelledby="perf-svg-title perf-svg-description"></svg></div>
 <p class="perf-legend"><span>● Main</span><span>◆ Release</span><span>■ Merged PR</span><span>○ Source patch / other</span><span>↕ Confidence interval</span></p>
+<ul id="perf-series-legend" aria-label="Environments and configurations"></ul>
 <p id="perf-chart-note"></p>
 <div id="perf-detail" class="perf-detail" aria-live="polite"></div>
-<details class="perf-table-wrap" open><summary>All plotted values and provenance</summary><div class="perf-table-scroll"><table id="perf-table"><caption id="perf-caption"></caption><thead><tr><th scope="col">Source / markers</th><th scope="col">Median</th><th scope="col">Uncertainty</th><th scope="col">Measured</th><th scope="col">Evidence</th></tr></thead><tbody></tbody></table></div></details>
+<details class="perf-table-wrap" open><summary>All plotted values and provenance</summary><div class="perf-table-scroll"><table id="perf-table"><caption id="perf-caption"></caption><thead><tr><th scope="col">Source / markers</th><th scope="col">Environment</th><th scope="col">Median</th><th scope="col">Uncertainty</th><th scope="col">Measured</th><th scope="col">Evidence</th></tr></thead><tbody></tbody></table></div></details>
 </section>
 <details id="perf-coverage" hidden><summary>Historical release and merged-PR coverage</summary><p id="perf-coverage-summary"></p><ul></ul></details>
 <details id="perf-attempts" hidden><summary>Runs without measurements</summary><ul></ul></details>
@@ -54,14 +55,12 @@
 <h2 id="method-title">Method &amp; evidence</h2>
 <p>Lower values mean less time or fewer reads for the selected workload. They do not describe overall application performance.</p>
 <details><summary>Reading the lines and uncertainty</summary>
-<p>Each line contains one workload, timing boundary, compiler, build profile, measurement configuration and machine class. A change to those conditions can start a new series. Source dependency changes remain part of the code being measured.</p>
+<p>All recorded environments and configurations are shown by default for the selected workload and measurement. Use the filters to narrow the comparison. Colors and line patterns distinguish configurations; each line connects only measurements with compatible workload semantics, machine/OS, compiler, build profile and recorded settings. Differences such as injected network latency remain separate configurations. Source dependency changes remain part of the code being measured.</p>
 <p>Revisions are evenly spaced in source-date order; horizontal distance does not represent elapsed time. Longer histories scroll horizontally to keep neighboring revisions distinct. Dates remain visible in the labels and details, while the table separately records when a run was measured. Uncommitted source patches use the known study date. A line is a visual guide between recorded values; gaps remain unknown. Where a revision has repeats, the line follows its first recorded run and all repeats remain visible.</p>
 <p>Time points show Criterion's median and its confidence interval. That interval describes uncertainty within the run, not between machines or days. Event reads are exact instrumented getter calls from one untimed fixture execution, with no statistical interval. Hover, focus or select a point, or use its table row to inspect provenance.</p>
 </details>
-<details><summary>Evidence classes and historical coverage</summary>
-<ul><li><strong>Stable runner:</strong> reserved for an explicitly configured, consistent environment. There is no stable history until that runner is activated and produces data.</li>
-<li><strong>Hosted CI:</strong> shared machines validate execution and retain measurements. Their jitter limits performance claims; they never join stable-runner lines.</li>
-<li><strong>Local runs:</strong> measurements on a working machine, including historical backfills and the October 13, 2026 comparison. The comparison’s source patch was uncommitted when measured and is not relabeled as a later PR or release. Harness changes keep separate series.</li></ul>
+<details><summary>Collection and historical coverage</summary>
+<p>CPU, OS and target architecture are shown where recorded. Machine identities and recorded settings remain part of the configuration; missing environment details are not inferred. Local, hosted-CI and dedicated-runner provenance remains in each point's details and does not exclude runs from the default view. Shared-machine contention can affect timing even on the same CPU.</p>
 <p>The coverage catalog tracks Cargo publications and merged PRs, including pending, failed and unsupported requests. An older revision that cannot run an equivalent harness gets a reason instead of a substituted point. July reference timings from other conditions have not been converted into points.</p>
 </details>
 <details><summary>What the local study measures</summary>
