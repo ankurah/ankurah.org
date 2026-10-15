@@ -19,7 +19,7 @@
 <div class="performance-layout">
 <aside class="benchmark-sidebar" aria-label="Benchmark navigation">
 <div class="sidebar-heading"><h2>Benchmarks</h2><span id="perf-workload-count"></span></div>
-<p class="sidebar-note">Choose a workload to explore its measured history.</p>
+<p class="sidebar-note">Start with a suggested family, then choose its size. All benchmarks includes internal, historical and newly discovered workloads.</p>
 <nav id="perf-workload-nav" aria-label="Workloads"></nav>
 <a class="sidebar-method-link" href="#method">Method &amp; evidence</a>
 </aside>
@@ -30,9 +30,10 @@
 <div id="performance-dashboard" data-local="history.json" data-backfill="backfill/history.json" data-remote="https://raw.githubusercontent.com/ankurah/ankurah/benchmark-data/history.json">
 <p id="performance-status" role="status">Loading benchmark history…</p>
 <div class="perf-controls" hidden>
+<label class="perf-family-control">Benchmark family<select id="perf-family"></select></label>
+<label class="perf-workload-control"><span id="perf-workload-label">Size / workload</span><select id="perf-workload"></select></label>
 <label>Environment<select id="perf-environment"><option value="">All environments</option></select></label>
 <label>Measurement<select id="perf-unit"></select></label>
-<label class="perf-workload-control">Workload<select id="perf-workload"></select></label>
 <label class="perf-series-control">Configuration<select id="perf-series"><option value="">All configurations</option></select></label>
 </div>
 <p id="perf-context"></p>

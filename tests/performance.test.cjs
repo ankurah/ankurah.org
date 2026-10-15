@@ -205,6 +205,37 @@ test('same named Criterion workloads in different package/target namespaces rema
     assert.equal(model.benchmarkRows(model.mergeHistories([a, b])).length, 2);
 });
 
+test('suggested families combine legacy and qualified size variants without hiding the full catalog', () => {
+    const discovered = {
+        schema_version: 1, runs: [], benchmarks: [{
+            id: 'ankurah-tests/lane_perf', package: 'ankurah-tests', target: 'lane_perf', status: 'discovered',
+            workloads: ['fresh_fetch_snapshot/100', 'fresh_fetch_snapshot/1000', 'fresh_fetch_snapshot/5000', 'bridge_catchup/5000', 'subscription_establishment/100']
+                .map(name => ({ id: 'ankurah-tests/lane_perf/' + name, unit: 'ns' }))
+        }]
+    };
+    const rows = model.benchmarkRows(model.mergeHistories([seed, discovered, catalog()]));
+    const original = structuredClone(rows), families = model.suggestedFamilies(rows);
+    assert.equal(families.length, 8);
+    assert.equal(families[0].id, 'single_writer_commit');
+    const bridge = families.find(family => family.id === 'bridge_catchup');
+    assert.deepEqual(bridge.variants.map(row => row.id), ['bridge_catchup/100', 'bridge_catchup/1000', 'ankurah-tests/lane_perf/bridge_catchup/5000']);
+    assert.equal(bridge.preferred, 'bridge_catchup/1000');
+    const snapshot = families.find(family => family.id === 'fresh_fetch_snapshot');
+    assert.equal(snapshot.variants.length, 3);
+    assert.equal(snapshot.preferred, 'ankurah-tests/lane_perf/fresh_fetch_snapshot/100');
+    assert.ok(rows.some(row => row.targetOnly));
+    assert.ok(rows.some(row => row.id === 'layers/diamond_chain_drain/64'));
+    assert.deepEqual(rows, original);
+});
+
+test('a future target with a familiar operation name stays independent in the full catalog', () => {
+    const history = model.mergeHistories([catalog([{ id: 'future-package/new-target/bridge_catchup/1000', unit: 'ns' }], 'discovered')]);
+    const rows = model.benchmarkRows(history);
+    assert.equal(rows.length, 1);
+    assert.equal(model.suggestedFamilies(rows).length, 0);
+    assert.equal(model.points(history, { workload: rows[0].id, unit: 'ns' }).length, 0);
+});
+
 test('duplicate IDs cannot silently replace provenance, while object key ordering is immaterial', () => {
     const original = fixture(), changed = copy(original);
     changed.runs[0].runner.id = 'different-machine';

@@ -109,6 +109,28 @@
         return [...rows.values()].sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true }));
     }
 
+    function workloadName(row) {
+        return row.id.replace(/^(ankurah-core\/event_dag|ankurah-tests\/lane_perf)\//, '');
+    }
+    function suggestedFamilies(rows) {
+        // This is navigation only. The discovered catalog and measured history remain complete.
+        return [
+            ['single_writer_commit', 'Local commit', 'durable_lww_overwrite'],
+            ['commit_to_subscriber_latency', 'Subscriber update', 'server_edit_to_client_change'],
+            ['fresh_fetch_snapshot', 'First fetch', '100'],
+            ['bridge_catchup', 'Reconnect and catch-up', '1000'],
+            ['subscription_establishment', 'Subscription initialization', '100'],
+            ['compare/diamond_chain', 'Shared-history comparison', '64'],
+            ['compare/linear_deep', 'Deep-history comparison', '1000'],
+            ['compare/wide_antichain', 'Wide-frontier comparison', '64'],
+        ].map(([id, label, size]) => {
+            const variants = rows.filter(row => !row.targetOnly && workloadName(row).startsWith(id + '/'))
+                .sort((a, b) => workloadName(a).localeCompare(workloadName(b), 'en', { numeric: true }));
+            const preferred = variants.find(row => workloadName(row) === id + '/' + size)?.id;
+            return { id, label, variants, preferred };
+        }).filter(family => family.variants.length);
+    }
+
     function sourceDate(run) { return run.source.patch_sha256 ? run.recorded_at : run.source.committed_at; }
     function sourceKey(run) { return run.source.sha + ':' + (run.source.patch_sha256 || ''); }
     function environmentKey(run) {
@@ -161,7 +183,7 @@
         } catch (_) { /* Invalid links are displayed as text. */ }
         return null;
     }
-    const api = { validateHistory, mergeHistories, benchmarkRows, sourceDate, sourceKey, environmentKey, environmentLabel, seriesKey, points, groupSeries, orderPoints, displayUnit, safeURL };
+    const api = { validateHistory, mergeHistories, benchmarkRows, workloadName, suggestedFamilies, sourceDate, sourceKey, environmentKey, environmentLabel, seriesKey, points, groupSeries, orderPoints, displayUnit, safeURL };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.PerformanceModel = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
