@@ -4,7 +4,7 @@
     if (!root) return;
     const model = window.PerformanceModel;
     const get = id => document.getElementById(id);
-    const controls = { environment: get('perf-environment'), workload: get('perf-workload'), unit: get('perf-unit'), series: get('perf-series') };
+    const controls = { family: get('perf-family'), environment: get('perf-environment'), workload: get('perf-workload'), unit: get('perf-unit'), series: get('perf-series') };
     let history;
     let seriesDescriptions = new Map();
     const number = value => new Intl.NumberFormat('en', { maximumSignificantDigits: 5 }).format(value);
@@ -51,9 +51,15 @@
         ].join(' · ')]));
     }
     function update(changed = 'history') {
-        if (changed === 'history') optionList(controls.workload, workloadRows().map(row => [row.id, row.targetOnly ? row.target.id + ' · awaiting workloads' : row.id]), 'compare/diamond_chain/64');
-        const row = workloadRows().find(row => row.id === controls.workload.value);
-        if (changed === 'history' || changed === 'workload') optionList(controls.unit, (row?.units || []).map(value => [value, value === 'ns' ? 'Time' : 'Event reads']), 'ns');
+        const rows = workloadRows(), families = model.suggestedFamilies(rows);
+        if (changed === 'history') optionList(controls.family, [...families.map(family => [family.id, family.label]), ['all', 'All benchmarks']], families[0]?.id || 'all');
+        const family = families.find(family => family.id === controls.family.value);
+        if (changed === 'history' || changed === 'family') {
+            optionList(controls.workload, (family?.variants || rows).map(row => [row.id, row.targetOnly ? row.target.id + ' · awaiting workloads' : family ? workloadLabel(row) : row.id]), family?.preferred);
+            get('perf-workload-label').textContent = family ? 'Size / workload' : 'Workload';
+        }
+        const row = rows.find(row => row.id === controls.workload.value);
+        if (['history', 'family', 'workload'].includes(changed)) optionList(controls.unit, (row?.units || []).map(value => [value, value === 'ns' ? 'Time' : 'Event reads']), 'ns');
         const candidates = model.points(history, { workload: controls.workload.value, unit: controls.unit.value });
         seriesDescriptions = describeSeries(candidates);
         const environments = new Map(candidates.map(({ run }) => [model.environmentKey(run), model.environmentLabel(run)]));
@@ -83,14 +89,14 @@
             if (attempt.run_url) link(item, 'Run log', attempt.run_url);
             if (attempt.raw_url) { item.append(' '); link(item, 'Diagnostic evidence', attempt.raw_url); }
         }
-        for (const button of get('perf-workload-nav').querySelectorAll('button')) button.setAttribute('aria-current', button.dataset.workload === controls.workload.value ? 'true' : 'false');
+        for (const button of get('perf-workload-nav').querySelectorAll('button')) button.setAttribute('aria-current', button.dataset.family === controls.family.value ? 'true' : 'false');
         renderCoverage();
         if (selected.length) draw(selected);
     }
     function workloadRows() { return model.benchmarkRows(history); }
     function workloadLabel(row) {
         if (row.targetOnly) return row.target.target + ' · ' + row.target.status;
-        const workload = row.id;
+        const workload = model.workloadName(row);
         const [group, name, size] = workload.split('/');
         if (group === 'compare') return ({ diamond_chain: 'Shared history', linear_deep: 'Linear history', wide_antichain: 'Wide frontier', disjoint: 'Disjoint histories' }[name] || name) + ' · ' + size;
         if (group === 'layers') return (name === 'diamond_chain_prepare' ? 'Prepare batch' : 'Drain layers') + ' · ' + size;
@@ -101,39 +107,23 @@
         const nameWithoutTarget = prefix && workload.startsWith(prefix) ? workload.slice(prefix.length) : workload;
         return row.description || nameWithoutTarget.replaceAll('_', ' ').replaceAll('/', ' · ');
     }
-    function workloadGroup(row) {
-        if (row.targetOnly) return 'Registered targets';
-        if (row.id.startsWith('compare/')) return 'Causal comparison';
-        if (row.id.startsWith('layers/')) return 'Layer work';
-        if (/^(bridge_catchup|single_writer_commit|commit_to_subscriber_latency)\//.test(row.id)) return 'End-to-end lanes';
-        return row.target?.package || row.id.split('/')[0].replaceAll('_', ' ');
-    }
     function renderNavigation() {
         const nav = get('perf-workload-nav');
         nav.replaceChildren();
-        const groups = new Map();
         const rows = workloadRows();
         const targets = rows.filter(row => row.targetOnly).length;
         get('perf-workload-count').textContent = `${rows.length - targets} workload${rows.length - targets === 1 ? '' : 's'}` + (targets ? ` · ${targets} target${targets === 1 ? '' : 's'}` : '');
-        for (const row of rows) {
-            const label = workloadGroup(row);
-            if (!groups.has(label)) groups.set(label, []);
-            groups.get(label).push(row);
-        }
-        const preferred = ['Causal comparison', 'Layer work', 'End-to-end lanes'];
-        const rank = label => preferred.includes(label) ? preferred.indexOf(label) : preferred.length;
-        for (const [label, workloads] of [...groups].sort((a, b) => rank(a[0]) - rank(b[0]))) {
+        for (const [label, families] of [['Suggested', model.suggestedFamilies(rows)], ['Full catalog', [{ id: 'all', label: 'All benchmarks' }]]]) {
             const section = element('section', undefined, nav);
             section.className = 'benchmark-group';
             element('h3', label, section);
-            for (const row of workloads) {
-                const button = element('button', workloadLabel(row), section);
+            for (const family of families) {
+                const button = element('button', family.label, section);
                 button.type = 'button';
-                button.dataset.workload = row.id;
-                button.title = row.id;
+                button.dataset.family = family.id;
                 button.addEventListener('click', () => {
-                    controls.workload.value = row.id;
-                    controls.workload.dispatchEvent(new Event('change', { bubbles: true }));
+                    controls.family.value = family.id;
+                    controls.family.dispatchEvent(new Event('change', { bubbles: true }));
                 });
             }
         }

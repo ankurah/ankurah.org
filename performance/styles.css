@@ -30,7 +30,8 @@ h1 { margin: 0 0 1rem; font-size: clamp(2.8rem, 3vw, 3.8rem); line-height: 1.2; 
 h2, h3 { line-height: 1.3; }
 #perf-results { background: var(--bg); border: 1px solid var(--table-border-color); border-radius: .8rem; padding: 2rem 2.4rem; }
 #perf-results .perf-chart-heading { margin-top: 0; }
-.perf-workload-control { display: none !important; }
+.perf-family-control { display: none !important; }
+.perf-workload-control { grid-column: 1 / -1; }
 .perf-controls { grid-template-columns: minmax(12rem, 1fr) minmax(10rem, .7fr) minmax(22rem, 2.2fr) !important; }
 .perf-series-control { grid-column: auto !important; }
 .method-panel { border-top: 1px solid var(--table-border-color); padding-top: 2rem; margin-top: 3rem; }
@@ -47,5 +48,5 @@ th, td { border-bottom: 1px solid var(--table-border-color); }
 th { padding: .7rem; }
 @media (min-width: 681px) and (max-width: 1100px) { .perf-controls { grid-template-columns: 1fr 1fr !important; } .perf-series-control { grid-column: 1 / -1 !important; } }
 @media (max-width: 900px) { .performance-layout { grid-template-columns: 23rem minmax(0,1fr); } main { padding: 2.8rem 2.4rem; } .benchmark-sidebar { padding: 2rem 1rem; } #perf-results { padding: 1.6rem; } }
-@media (max-width: 680px) { .site-header { padding: 1.4rem 2rem; flex-wrap: wrap; gap: 1rem; } .brand { font-size: 1.9rem; } .site-header nav { gap: 1.8rem; font-size: 1.25rem; } .performance-layout { display: block; } .benchmark-sidebar { display: none; } main { padding: 2.5rem 2rem; } .perf-workload-control { display: flex !important; } .perf-controls { grid-template-columns: 1fr 1fr !important; } .perf-workload-control, .perf-series-control { grid-column: 1 / -1 !important; } #perf-results { padding: 1.4rem; } }
+@media (max-width: 680px) { .site-header { padding: 1.4rem 2rem; flex-wrap: wrap; gap: 1rem; } .brand { font-size: 1.9rem; } .site-header nav { gap: 1.8rem; font-size: 1.25rem; } .performance-layout { display: block; } .benchmark-sidebar { display: none; } main { padding: 2.5rem 2rem; } .perf-family-control { display: flex !important; grid-column: 1 / -1; } .perf-controls { grid-template-columns: 1fr 1fr !important; } .perf-workload-control, .perf-series-control { grid-column: 1 / -1 !important; } #perf-results { padding: 1.4rem; } }
 @media (prefers-color-scheme: dark) { :root { color-scheme: dark; --bg: #162330; --fg: #e2eaf1; --links: #8bc3fb; --table-border-color: #354758; --quote-bg: #1a3045; --muted: #adbecd; } body { background: #101c27; } .benchmark-group button:hover { background: #21374b; } .benchmark-group button[aria-current="true"] { background: #274763; color: #c6e2ff; } }
