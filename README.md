@@ -84,6 +84,14 @@ The deployment workflow:
 - `src/glossary.md` - Terminology reference
 - `src/design-goals.md` - Design philosophy
 - `src/examples.md` - Code examples
+- `src/learn/synchronization/` - Standalone interactive Fetch/live-query guide;
+  mdBook copies its HTML, CSS and JavaScript modules into `book/` unchanged
+
+The synchronization guide is linked from the How It Works navigation. Edit its
+lesson content in `stories.mjs`, presentation in `app.mjs` and `guide.css`, and
+the separate protocol reference in `reference.html`. Run its branch and link
+checks with `node --test tests/synchronization.test.mjs`, then use the normal
+site preview to check the interaction and layout.
 
 ## Adding Content
 

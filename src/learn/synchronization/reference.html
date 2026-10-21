@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>Synchronization reference · Ankurah</title><link rel="stylesheet" href="guide.css"></head>
+<body><a class="skip" href="#reference">Skip to reference</a>
+<header class="site-header"><a class="brand" href="../../what-is-ankurah.html">Ankurah</a><nav aria-label="Synchronization guide"><a href="index.html">Fetch</a><a href="livequery.html">Live queries</a><a href="reference.html" aria-current="page">Reference</a></nav></header>
+<div class="intro"><p class="eyebrow">Look up a detail</p><h1>Synchronization reference</h1><p class="description">The vocabulary and message boundaries behind the walkthrough.</p><nav class="ref-nav" aria-label="Reference sections"><a href="#trees">Trees and caching</a><a href="#known-state">KnownState</a><a href="#messages">Messages and replies</a><a href="#completion">When work finishes</a><a href="#limits">Current limits</a><a href="#source">Source</a></nav></div>
+<main class="reference" id="reference">
+<section id="trees"><h2>One cache per node; each tree describes local data</h2>
+<p>Requester and responder name the roles in an exchange. They are not different kinds of DigestTree. A node can use the same maintained cache when fetching from another node or serving its own local data.</p>
+<p>The node integration reuses an entry for the exact Selection, including ORDER BY and LIMIT, an accepted TreeSpec, the same credentials and the current policy-filtered selection and retrieval scope. It does not yet search for broader trees that could serve a requested subspan. Before each offer, the entry checks current permissions and catches up through a finite committed revision.</p>
+<p><strong>Different TreeSpec means different tree.</strong> Updating entities can change a tree’s contents under the same spec. A different spec creates a different tree. A captured comparison snapshot keeps its original spec and contents while the resident entry continues to receive changes.</p>
+<p>Each resident entry consumes committed entity changes even when idle. Active responder streams pin their entries; unpinned entries can be evicted in least-recently-used order. The idle retention allowance is 32 entries and 128 MiB of accounted row and tree memory. It does not impose a new limit of 32 active queries; active streams keep their separate limits. Eviction does not delete stored entities or invalidate snapshots already held by an active comparison. A requester can reacquire an evicted entry for a refresh. Small head inventories can be produced without constructing the digest nodes; hashing stays lazy.</p>
+<p class="note">This guide describes the digest-tree feature branch. It is a review preview, not documentation of a released version.</p>
+</section>
+<section id="known-state"><h2>What the tree-related types mean</h2>
+<div class="table-scroll"><table><thead><tr><th>Type</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>TreeSpec</code></td><td>The tree’s membership predicate and canonical key layout.</td></tr>
+<tr><td><code>TreeSpan</code></td><td>An exact interval of full tree addresses. The endpoints include the key bytes; no external prefix is prepended to interpret them.</td></tr>
+<tr><td><code>TreeSpanDigest</code></td><td>A span, its aggregate digest and count, plus a containing subtree prefix used for refinement.</td></tr>
+<tr><td><code>EntityHead</code></td><td>An entity ID and its full causal clock.</td></tr>
+<tr><td><code>KeyedEntityHead</code></td><td>An EntityHead plus this tree’s property-key bytes. The ID distinguishes entities with equal keys.</td></tr>
+<tr><td><code>TreeSpanInventory</code></td><td>A span and every matching entity head within it. Empty heads explicitly mean no matches within those bounds.</td></tr>
+<tr><td><code>SpanContent</code></td><td>Either <code>Heads(TreeSpanInventory)</code> or <code>Digest(TreeSpanDigest)</code>.</td></tr>
+<tr><td><code>KnownState</code></td><td>The requester’s TreeSpec and disjoint spans describing its captured query result.</td></tr>
+</tbody></table></div>
+<p><code>KnownState</code> is required in Fetch and SubscribeQuery; RefreshState supplies a new one. An empty <em>inventory</em> says “no matches here.” An empty <code>spans</code> list or omitted range says “unknown.” Neither says that the requester has no entity state cached outside this query.</p>
+<p>The current offer producer uses one request-sized inventory when small enough, otherwise a bounded frontier of span digests. The protocol accepts disjoint mixtures too. Different follow-up page limits do not require splitting and gluing back together an initial inventory.</p>
+<details class="detail"><summary>Inventory encoding and crate ownership</summary><p>Inventories use <code>PackedHeads</code>. Sorted key prefixes can be encoded once and reused by suffixes in a flat buffer; plain encoding is used when smaller. Borrowed cursors read the packed heads. The walkthrough expands them for readability.</p><p>TreeSpec, TreeSpan and TreeSpanDigest belong to digest-tree. Entity clocks, inventories and KnownState belong to proto because they describe peer knowledge with actual clocks. The standalone tree works with head hashes and does not manage network exchanges.</p></details>
+</section>
+<section id="messages"><h2>Messages and their direct replies</h2>
+<div class="table-scroll"><table><thead><tr><th>Sent</th><th>Successful direct reply</th><th>Contains</th></tr></thead><tbody>
+<tr><td><code>Request → Fetch</code></td><td><code>Response → Fetch(StateReply)</code></td><td>Spec, round, stream, and frame 0.</td></tr>
+<tr><td><code>Request → SubscribeQuery</code></td><td><code>Response → QuerySubscribed</code></td><td>Query ID and initial StateReply.</td></tr>
+<tr><td><code>Request → ContinueState</code></td><td><code>Response → Success</code></td><td>Acknowledgment of control input. Resulting data is pushed separately.</td></tr>
+<tr><td><code>Request → RefreshState</code></td><td><code>Response → Success</code></td><td>Acknowledgment. BeginRound is pushed separately.</td></tr>
+<tr><td><code>Request → FinishStateRound</code></td><td><code>Response → Success</code></td><td>Acknowledgment of round release.</td></tr>
+<tr><td><code>Update → StateFrame</code></td><td><code>UpdateAck → Success</code></td><td>Routing receipt, not credit or proof of application.</td></tr>
+<tr><td><code>AbandonStateStream</code></td><td>None</td><td>One-way stream teardown.</td></tr>
+</tbody></table></div>
+<p>Requests each have their own request ID. Pushed frames retain the original Fetch/SubscribeQuery request ID, even after refresh, and also carry an update ID and a stream frame sequence. A control response and a separately pushed frame can arrive in either order.</p>
+<details class="detail"><summary>Questions, answers and failure paths</summary><p><code>StateItem::Digest</code> asks for the requester’s digest over the same bounds. <code>StateItem::NeedHeads</code> asks for exact keys, IDs and clocks. Answers travel in <code>ContinueState.answers</code>. Neither the routing UpdateAck nor the control Success is that comparison answer.</p><p>Retryable initial capture can return <code>StateCaptureBusy</code>. ContinueState and FinishStateRound can return <code>StateStreamUnavailable</code>; requests can also fail with Error. Later frames can report RestartRequired, SourceUnavailable, or RepairUnavailable. Required uncovered history is never silently treated as complete.</p></details>
+</section>
+<section id="completion"><h2>Four different claims</h2>
+<div class="table-scroll"><table><thead><tr><th>Claim</th><th>What it establishes</th></tr></thead><tbody>
+<tr><td><code>progress: Complete</code></td><td>The responder finished enumeration for one captured round. Required connecting history may still be missing locally.</td></tr>
+<tr><td><code>processed_through</code></td><td>The receiver processed a contiguous frame prefix; those sender buffers can be released. Entity application need not be finished.</td></tr>
+<tr><td><code>applied_through</code></td><td>All live publications through a source revision have actual target coverage and have committed publicly. Their retained live repair targets can be released.</td></tr>
+<tr><td><code>FinishStateRound: Applied</code></td><td>The finite round’s targets are covered and its result is installed. Its snapshot can be released. Readiness does not wait for the Success reply.</td></tr>
+</tbody></table></div>
+<p>For a live query, the finite round includes publications through its captured revision. Later writes do not keep moving that goal. Their application and membership obligations remain tracked independently.</p>
+<p>Live delivery can happen during comparison. Committed later membership decisions survive installation of an older baseline. A logical live publication can span frames; <code>complete: true</code> marks its final fragment, and public membership plus causing events wait for actual target coverage.</p>
+<p>A round can be cancelled without claiming coverage. <code>FinishStateRound { outcome: Cancelled }</code> preserves the standing stream. <code>AbandonStateStream</code> ends the stream and any active round. A Fetch stream retires when its sole round finishes.</p>
+</section>
+<section id="limits"><h2>Budgets are implementation policy</h2>
+<p>The responder chooses how much data and work to do per pass; requests do not select a ResponseBudget. A frame can contain several tree-related items, and the protocol does not require one tree tier or one page per request.</p>
+<ul><li>Initial offer: up to 2,048 heads when the request’s packed and expanded-size checks allow; otherwise a digest frontier bounded by 16 KiB, 128 spans and 32 refinements.</li><li>Follow-up head inventories: at most 128 heads per page, possibly fewer because of byte/work limits.</li><li>Responder production pass: 64 KiB item/work budget, up to 128 work steps and 32 tree/history operations; envelope allowance adds 4 KiB to the hard frame cap.</li><li>Ordinary send window: 4 MiB, with separate frame-count and reserved-control capacity limits.</li></ul>
+<p>These are current branch policies, not performance guarantees. Cold, large transfers need many frames but no information-dependent question turn if the requester has supplied exact empty coverage. They can still wait for credit or repair history.</p>
+</section>
+<section id="source"><h2>Read alongside the implementation</h2>
+<p>The guide describes <code>feat/digest-tree-crate</code> at checkpoint <code>02a951d6</code>, including the shared node-owned cache. Message examples are schematic and packet boundaries are illustrative. The implementation and this guide are awaiting review.</p>
+<ul><li><a href="https://github.com/ankurah/ankurah/blob/feat/digest-tree-crate/proto/src/state.rs">State rounds, frames, answers and outcomes</a></li><li><a href="https://github.com/ankurah/ankurah/blob/feat/digest-tree-crate/proto/src/request.rs">Request types</a> and <a href="https://github.com/ankurah/ankurah/blob/feat/digest-tree-crate/proto/src/message.rs">one-way messages</a></li><li><a href="https://github.com/ankurah/ankurah/blob/feat/digest-tree-crate/core/src/node/state_sync/resident.rs">The shared resident-tree cache</a></li><li><a href="https://github.com/ankurah/ankurah/blob/feat/digest-tree-crate/core/src/node/state_sync/tree.rs">Tree snapshots and initial offers</a></li><li><a href="https://github.com/ankurah/ankurah/blob/feat/digest-tree-crate/core/src/node/state_sync/source.rs">Source capture and ongoing changes</a></li><li><a href="https://github.com/ankurah/ankurah/blob/feat/digest-tree-crate/core/src/node/state_sync/client/driver.rs">Receiving, applying and finishing a round</a></li></ul>
+</section></main><footer class="page-footer">Branch preview · 21 October 2026 · <a href="index.html">Return to the Fetch walkthrough</a></footer></body></html>

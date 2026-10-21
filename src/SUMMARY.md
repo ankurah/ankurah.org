@@ -22,6 +22,7 @@
 # How It Works
 
 - [Overview](architecture.md)
+- [Synchronization: Interactive Guide](internals/synchronization.md)
 - [Concurrency: The Mental Model](concurrency/index.md)
 - [Conflict Resolution & Guarantees](concurrency/guarantees.md)
 - [Glossary](glossary.md)
