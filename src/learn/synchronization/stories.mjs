@@ -63,25 +63,25 @@ export function page(state) {
   const result = { title:titles[state.step], context, paragraphs:[], messages:[], note:'', choices:null, visual:null };
   switch(state.step) {
     case 'lookup':
-      result.paragraphs = ['A Fetch begins with its Selection. The node looks in its local LRU for a compatible cached tree. Cached trees are kept updated as entities change while they remain resident.', 'Choose whether this Fetch finds one. This integration matches the exact Selection, accepted TreeSpec, credentials and current access scope. Similar predicate text alone is not sufficient.'];
+      result.paragraphs = ['A Fetch begins with its Selection. The node looks in its local LRU for a compatible cached tree. Cached trees are kept updated as entities change while they remain resident.', 'Choose whether this Fetch finds one. A compatible tree contains all the required members and can select the query’s range and limit using its key layout. The node also checks that access permissions allow sharing.'];
       result.choices={field:'cache',label:'Is there a compatible tree in the cache?',options:[{value:'miss',label:'No cached tree',detail:'Capture and add one'},{value:'hit',label:'Tree already cached',detail:'Use the maintained entry'}]};
-      result.visual={kind:'decision',label:state.cache==='hit'?'Cache hit → reuse':'Cache miss → create',detail:'Different TreeSpec = different tree.'};
-      result.note='A comparison uses a frozen snapshot. Keeping the resident tree updated does not change the snapshot already being compared.';
+      result.visual={kind:'decision',label:state.cache==='hit'?'Cache hit → reuse':'Cache miss → create',detail:'Find a tree whose TreeSpec is compatible with this Fetch’s Selection.'};
+      result.note='For example, a tree covering all of project = acme AND foo > 7 can serve foo > 10 when keyed by project and foo. It cannot serve foo > 3. A tree created from a limited result initially serves only that same Selection.';
       break;
     case 'local':
       result.title=state.cache==='hit'?'Capture the cached result':'Capture local matches and add a cache entry';
-      result.paragraphs = [state.cache==='hit'?'The node checks current access permissions and catches the cached tree up through a finite change boundary, then takes a stable snapshot for this Fetch. Later changes keep updating the resident entry.':'The node starts following committed changes before reading its local matches, so it cannot miss a write during capture. After a coherent capture succeeds, it adds the entry to the LRU. Each key and causal head comes from the same entity version.', 'Choose the requester’s starting result. The predicate stays the same in every case.'];
+      result.paragraphs = [state.cache==='hit'?'The node checks current access permissions and catches the cached tree up through a finite change boundary, then takes a stable snapshot for this Fetch. Later changes keep updating the resident entry.':'The node starts following committed changes before reading its local matches, so it cannot miss a write during capture. It reads the local result and adds a maintained tree to the cache. With no LIMIT, that tree covers the full predicate. A new limited query reads only its bounded result; the cache records that narrower coverage. Each key and causal head comes from the same entity version.', 'Choose the requester’s starting result. The predicate stays the same in every case.'];
       result.choices={field:'local',label:'How many matches does the requester already have?',options:localOptions};
       result.visual={kind:'members',left:empty?'No matching entities':many?'4,096 matching entities':'A @ HA · B @ HB',right:empty?'Many matching entities':many?'A result to compare':'A @ HA · B @ HB2 · C @ HC'};
-      result.note='The cached rows can produce a small head inventory directly. Digest construction stays lazy until hashing is needed. LRU eviction removes the derived cache entry, not entity data or snapshots already in use.';
+      result.note='An active Fetch or subscription holds a lease that pins its tree. Dropping the last lease makes the tree eligible for LRU eviction. Small inventories covering the captured tree can avoid hashing. Selecting a narrower view from a larger tree may first build its digest nodes.';
       break;
     case 'offer':
       result.paragraphs = many
         ? ['The requester uses or lazily builds a digest tree for its captured result, then chooses a bounded set of non-overlapping span digests covering the full address space.', 'A digest represents the members and their heads in one span. Matching digests let the peers skip that span.']
-        : [empty ? 'The requester sends one empty inventory covering the full address space. This explicitly says “I have no matches for this Selection.”' : 'The requester sends one inventory containing A and B, their tree keys, and their full causal clocks.', 'Small inventories can be sent directly. A DigestTree does not have to be built just to send these heads.'];
+        : [empty ? 'The requester sends one empty inventory covering the full address space. This explicitly says “I have no matches for this Selection.”' : 'The requester sends one inventory containing A and B, their tree keys, and their full causal clocks.', 'Small inventories can be sent directly. For a whole-tree query, these heads do not require building digest nodes.'];
       result.visual={kind:'offer',label:many?'Bounded span digests':empty?'Heads: []':'Heads: A @ HA, B @ HB',detail:many?'R1 · R2 · … cover the full address space':'One full-span inventory'};
       result.payload={label:'See the KnownState fields',body:knownState(state.local)};
-      result.note='TreeSpec defines the tree’s predicate and key layout. A different TreeSpec means a different tree. The captured state remains frozen for this comparison.';
+      result.note='TreeSpec defines the resident tree’s predicate and key layout. KnownState describes this query’s selected members within that layout. The captured comparison stays frozen while the resident tree continues to receive updates.';
       break;
     case 'request':
       result.paragraphs=['The requester sends one Fetch request containing the Selection and its KnownState. The responder uses its own node’s shared LRU too: reuse a compatible entry or capture and add one, then compare a frozen snapshot with the offer.','The responder sends exactly one Fetch response. Its StateReply includes the stream ID, the captured round, and frame 0. Later data can be pushed separately.'];
@@ -146,7 +146,7 @@ export function page(state) {
       break;
     case 'subscribe':
       result.context='A live query uses the same comparison machinery';
-      result.paragraphs=['SubscribeQuery starts with the same Selection and KnownState as Fetch. Here the requester has many matches and offers span digests. QuerySubscribed contains the initial StateReply and frame 0.','The difference is lifetime: the subscription attaches a live delivery route to the same maintained cache entry. QuerySubscribed alone does not mean the result is loaded.'];
+      result.paragraphs=['SubscribeQuery starts with the same Selection and KnownState as Fetch. Here the requester has many matches and offers span digests. QuerySubscribed contains the initial StateReply and frame 0.','The subscription holds a lease on the maintained tree, including across reconnects, and tracks its own query membership. Compatible subscriptions share the tree, but can have different ranges, ordering and limits. QuerySubscribed alone does not mean the result is loaded.'];
       result.messages=[request('SubscribeQuery',`SubscribeQuery { query_id: Q, version: 1,\n  selection: ${selection},\n  known_state: ${knownState('many')} }`,'NodeResponseBody::QuerySubscribed { query_id, state: StateReply }'),wire('left','QuerySubscribed · frame 0','NodeResponseBody::QuerySubscribed','None.','QuerySubscribed { query_id: Q, state: StateReply {\n  spec, round: { number: 0, revision: 100 },\n  frame: StateFrame { stream: S1, sequence: 0,\n    body: State { round: 0, items: [NeedHeads(R)], progress: Continue } }\n} }','progress: Continue')];
       break;
     case 'overlap':
