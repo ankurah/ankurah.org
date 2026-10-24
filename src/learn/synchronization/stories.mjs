@@ -6,12 +6,12 @@ const span = 'TreeSpan::full()';
 const head = (id, clock) => `{ key: Kacme, entity: { entity_id: ${id}, head: ${clock} } }`;
 const wire = (direction, label, type, reply, body, progress = '') => ({ direction, label, type, reply, body, progress });
 const request = (name, body, reply = 'NodeResponseBody::Success') => wire('right', name, `NodeMessage::Request → NodeRequestBody::${name}`, reply, body);
-const response = (body, progress) => wire('left', 'Fetch response · frame 0', 'NodeMessage::Response → NodeResponseBody::Fetch(StateReply)', 'None. This answers the original Fetch request.', body.startsWith('Fetch(') ? body : `Fetch(StateReply {\n  spec, round: { number: 0, revision: 100 },\n  frame: ${body}\n})`, progress);
-const pushed = (label, body, progress = '') => wire('left', label, 'NodeMessage::Update → NodeUpdateBody::StateFrame', 'NodeMessage::UpdateAck → NodeUpdateAckBody::Success (routing receipt)', body, progress);
-const ack = () => wire('right', 'UpdateAck', 'NodeMessage::UpdateAck', 'None.', 'NodeUpdateAck { id: update_id, body: Success }');
+const response = (body, progress) => wire('left', 'Fetch response · frame 0', 'NodeMessage::Response → NodeResponseBody::Fetch(StateReply)', 'None. This answers the original Fetch request.', body.startsWith('Fetch(') ? body : `Fetch(StateReply {\n  round: { number: 0, revision: 100 },\n  frame: ${body}\n})`, progress);
+const pushed = (label, body, progress = '') => wire('left', label, 'NodeMessage::StateFrame', 'None. The requester returns frame credit in a later StateFeedback.', body, progress);
 const success = () => wire('left', 'Success', 'NodeMessage::Response → NodeResponseBody::Success', 'None.', 'NodeResponse { request_id: control_request_id, body: Success }');
-const stateBody = (items, progress, sequence = 0) => `StateFrame {\n  stream: S1, sequence: ${sequence},\n  body: State { round: 0,\n    items: ${items},\n    progress: ${progress}\n  }\n}`;
-const feedback = answers => request('ContinueState', `ContinueState {\n  stream: S1, round: Some(0),\n  processed_through: last_processed_sequence,\n  applied_through: None,\n  answers: ${answers}\n}`);
+const roundFrame = (items, progress, sequence = 0) => `StateFrame {\n  stream: S1, sequence: ${sequence},\n  body: Round { round: 0,\n    items: ${items},\n    progress: ${progress}\n  }\n}`;
+// Without answers, a StateFeedback only returns frame credit.
+const feedback = answers => request('StateFeedback', `StateFeedback {\n  stream: S1,\n  processed_through: last_processed_sequence,\n  applied_through: None,\n  answers: ${answers ? `Some(Round { round: 0,\n    answers: ${answers}\n  })` : 'None'}\n}`);
 export function knownState(local) {
   const content = local === 'many'
     ? 'Digest(TreeSpanDigest { prefix: P1, bounds: R1, digest: D1 }),\n    Digest(TreeSpanDigest { prefix: P2, bounds: R2, digest: D2 }), …'
@@ -84,7 +84,7 @@ export function page(state) {
       result.note='TreeSpec defines the resident tree’s predicate and key layout. KnownState describes this query’s selected members within that layout. The captured comparison metadata stays fixed while the resident tree continues to receive updates. No entity payload is retained by either tree or comparison.';
       break;
     case 'request':
-      result.paragraphs=['The requester sends one Fetch request containing the Selection and its KnownState. The responder uses its own node’s shared LRU too: reuse a compatible entry or capture and add one, then compare a frozen snapshot with the offer.','The responder sends exactly one Fetch response. Its StateReply includes the stream ID, the captured round, and frame 0. Later data can be pushed separately.'];
+      result.paragraphs=['The requester sends one Fetch request containing the Selection and its KnownState. The responder uses its own node’s shared LRU too: reuse a compatible entry or capture and add one, then compare a frozen snapshot with the offer.','The responder sends exactly one Fetch response. Its StateReply carries round 0, with the source revision its snapshot reflects, and frame 0, which names the stream. Later frames arrive as one-way StateFrame messages.'];
       result.messages=[request('Fetch',`Fetch {\n  selection: ${selection},\n  known_state: ${knownState(state.local)}\n}`, 'NodeResponseBody::Fetch(StateReply)')];
       result.note='The next steps show what that response contains. All examples use stream S1 and round 0; names and encoded values are abbreviated.';
       break;
@@ -98,31 +98,31 @@ export function page(state) {
       break;
     case 'equal':
       result.paragraphs=['The digests and counts agree for the complete captured result. The responder returns an empty item list with progress: Complete.','It does not echo the digests or send entity heads. The existing local result has been confirmed for this round.'];
-      result.messages=[response(`Fetch(StateReply { spec, round: { number: 0, revision: 100 },\n  frame: ${stateBody('[]','Complete')}\n})`,'progress: Complete')];
+      result.messages=[response(`Fetch(StateReply { round: { number: 0, revision: 100 },\n  frame: ${roundFrame('[]','Complete')}\n})`,'progress: Complete')];
       break;
     case 'refine':
       result.paragraphs=['The responder splits the differing span R into R1 and R2 and sends its digests for those exact bounds. The requester answers both from its frozen snapshot.','Here R1 agrees, so it needs no further work. R2 differs and has only 32 responder rows; the next question asks for its entity heads. A still-large difference could repeat this refinement.'];
-      result.messages=[response(stateBody('[Digest(R1: D1, count: 480), Digest(R2: D2, count: 32)]','Continue'),'progress: Continue'),feedback('[Digest(R1: D1, count: 480), Digest(R2: D2local, count: 32)]'),success()];
-      result.note='Digest is a question inside the State frame. Its answer is a new ContinueState request. The Success response carries no next question or data.';
+      result.messages=[response(roundFrame('[Digest(R1: D1, count: 480), Digest(R2: D2, count: 32)]','Continue'),'progress: Continue'),feedback('[Digest(R1: D1, count: 480), Digest(R2: D2local, count: 32)]'),success()];
+      result.note='Digest is a question inside the Round frame. Its answer travels in a new StateFeedback request. The Success response carries no next question or data.';
       break;
     case 'heads': {
       const bounds = state.difference==='large'?'R2':'R';
       result.paragraphs=[`The responder asks for the requester’s exact keys, entity IDs and clocks in ${bounds}. That identifies which entities are missing or have different histories.`,`The requester answers from its frozen snapshot. This example fits in one inventory answer; a larger inventory can need bounded pages.`];
-      const question = stateBody(`[NeedHeads(${bounds})]`,'Continue',state.difference==='large'?1:0);
-      result.messages=state.difference==='large'?[pushed('NeedHeads · frame 1',question,'progress: Continue'),ack()]:[response(question,'progress: Continue')];
+      const question = roundFrame(`[NeedHeads(${bounds})]`,'Continue',state.difference==='large'?1:0);
+      result.messages=state.difference==='large'?[pushed('NeedHeads · frame 1',question,'progress: Continue')]:[response(question,'progress: Continue')];
       result.messages.push(feedback(`[Heads(TreeSpanInventory { bounds: ${bounds}, heads: packed […] })]`),success());
-      result.note='The responder can continue independent work while waiting. ContinueState both answers the question and returns credit for frames already processed.';
+      result.note='The responder can continue independent work while waiting. StateFeedback both answers the question and returns credit for frames already processed.';
       break;
     }
     case 'transfer':
       result.paragraphs=empty
-        ? ['The Fetch response carries captured membership heads and current entity data as separate items. More arrive as numbered StateFrame updates, without a request for each page.','The requester returns processed-through credit in ContinueState so the responder can free its send buffers and keep sending. The final enumeration frame carries progress: Complete.']
+        ? ['The Fetch response carries captured membership heads and current entity data as separate items. More arrive as numbered one-way StateFrame messages, without a request for each page.','The requester returns processed-through credit in StateFeedback so the responder can free its send buffers and keep sending. The final enumeration frame carries progress: Complete.']
         : many ? ['The responder supplies the authoritative membership of the differing span and the entity data needed there. Matching spans need no entity transfer.','When an entity clock is known, connecting events can be used. An unknown entity usually starts with a snapshot. Large payloads are chunked.']
         : ['The Fetch response contains updated membership heads, connecting events for B and a current snapshot for C. A is unchanged and is not sent again.','This small example fits in frame 0 with progress: Complete. Larger changes can continue in separately pushed frames.'];
-      result.messages=empty ? [response(stateBody('[Heads(first membership page), Repair(current entity snapshots, …)]','Continue'),'progress: Continue'),pushed('Heads + current data · frame 1',stateBody('[Heads(next membership page), Repair(current entity snapshots, …)]','Continue',1),'progress: Continue'),ack(),feedback('[]'),success(),pushed('Heads + current data · frame 2',stateBody('[Heads(last membership page), Repair(current entity snapshots, …)]','Complete',2),'progress: Complete'),ack()]
-        : many ? [pushed('Membership + repairs',stateBody('[Heads(responder inventory), Repair { target: HE, delta: … }]','Complete','next'),'progress: Complete'),ack()]
-        : [response(stateBody('[Heads(changed membership: B@HB2, C@HC),\n      Repair { target: HB2, delta: EventBridge(B, …) },\n      Repair { target: HC, delta: StateSnapshot(C@HC) }]','Complete'),'progress: Complete')];
-      result.note='An UpdateAck confirms routing, not application and not stream credit. A ContinueState Success can arrive before or after separately pushed data; the illustration chooses one order.';
+      result.messages=empty ? [response(roundFrame('[Heads(first membership page), Repair(Delta { target, delta: StateSnapshot(…) }), …]','Continue'),'progress: Continue'),pushed('Heads + current data · frame 1',roundFrame('[Heads(next membership page), Repair(Delta { target, delta: StateSnapshot(…) }), …]','Continue',1),'progress: Continue'),feedback(),success(),pushed('Heads + current data · frame 2',roundFrame('[Heads(last membership page), Repair(Delta { target, delta: StateSnapshot(…) }), …]','Complete',2),'progress: Complete')]
+        : many ? [pushed('Membership + repairs',roundFrame('[Heads(responder inventory), Repair(Delta { target: HE, delta: … })]','Complete','next'),'progress: Complete')]
+        : [response(roundFrame('[Heads(changed membership: B@HB2, C@HC),\n      Repair(Delta { target: HB2, delta: EventBridge(B, …) }),\n      Repair(Delta { target: HC, delta: StateSnapshot(C@HC) })]','Complete'),'progress: Complete')];
+      result.note='Nothing answers a pushed frame; its credit returns in a later StateFeedback. A StateFeedback Success can arrive before or after separately pushed data; the illustration chooses one order.';
       break;
     case 'apply':
       result.paragraphs=['The requester applies snapshots and events through normal validation. It checks that its actual entity state incorporates every target offered by this round.','A head describes membership at capture; a payload is read from the entity or storage when it is sent and may be newer. Both required heads must be incorporated. Receiving progress: Complete only ends enumeration. It does not prove that the data has been incorporated.'];
@@ -130,8 +130,8 @@ export function page(state) {
       result.visual={kind:'decision',label:state.repair?'Missing history → ask for repair':'Targets covered → install the result',detail:'Application is local work; it sends no message by itself.'};
       break;
     case 'repair':
-      result.paragraphs=[`The requester still needs connecting history for ${target} at its offered target. It sends NeedRepair inside ContinueState.`,`The responder pushes the connecting events. The requester applies them and verifies coverage; it may keep newer or concurrent local changes too.`];
-      result.messages=[feedback(`[NeedRepair { entity_id: ${target}, target: Htarget }]`),success(),pushed('Connecting events',stateBody(`[Repair { target: Htarget, delta: EventBridge(${target}, …) }]`,'Continue','next'),'progress: Continue'),ack()];
+      result.paragraphs=[`The requester still needs connecting history for ${target} at its offered target. It sends NeedRepair inside StateFeedback.`,`The responder pushes the connecting events. The requester applies them and verifies coverage; it may keep newer or concurrent local changes too.`];
+      result.messages=[feedback(`[NeedRepair(RepairRequest { entity_id: ${target}, target: Htarget })]`),success(),pushed('Connecting events',roundFrame(`[Repair(Delta { target: Htarget, delta: EventBridge(${target}, …) })]`,'Continue','next'),'progress: Continue')];
       result.note='A late repair frame can say Continue after an earlier Complete. That does not reopen enumeration. Unavailable required history fails the stream explicitly.';
       break;
     case 'ready':
@@ -147,22 +147,22 @@ export function page(state) {
     case 'subscribe':
       result.context='A live query uses the same comparison machinery';
       result.paragraphs=['SubscribeQuery starts with the same Selection and KnownState as Fetch. Here the requester has many matches and offers span digests. QuerySubscribed contains the initial StateReply and frame 0.','The subscription holds a lease on the maintained tree, including across reconnects, and tracks its own query membership. Compatible subscriptions share the tree, but can have different ranges, ordering and limits. QuerySubscribed alone does not mean the result is loaded.'];
-      result.messages=[request('SubscribeQuery',`SubscribeQuery { query_id: Q, version: 1,\n  selection: ${selection},\n  known_state: ${knownState('many')} }`,'NodeResponseBody::QuerySubscribed { query_id, state: StateReply }'),wire('left','QuerySubscribed · frame 0','NodeResponseBody::QuerySubscribed','None.','QuerySubscribed { query_id: Q, state: StateReply {\n  spec, round: { number: 0, revision: 100 },\n  frame: StateFrame { stream: S1, sequence: 0,\n    body: State { round: 0, items: [NeedHeads(R)], progress: Continue } }\n} }','progress: Continue')];
+      result.messages=[request('SubscribeQuery',`SubscribeQuery { query_id: Q, version: 1,\n  selection: ${selection},\n  known_state: ${knownState('many')} }`,'NodeResponseBody::QuerySubscribed { query_id, state: StateReply }'),wire('left','QuerySubscribed · frame 0','NodeResponseBody::QuerySubscribed','None.','QuerySubscribed { query_id: Q, state: StateReply {\n  round: { number: 0, revision: 100 },\n  frame: StateFrame { stream: S1, sequence: 0,\n    body: Round { round: 0, items: [NeedHeads(R)], progress: Continue } }\n} }','progress: Continue')];
       break;
     case 'overlap':
       result.paragraphs=['Round 0 compares the captured result at revision 100. While its head question is outstanding, live revision 101 can arrive. Live delivery is not held until the comparison finishes.','In this example, revision 101 removes A and adds B. Answers to round 0 still come from the original frozen requester snapshot.'];
-      result.messages=[pushed('Live revision 101', 'StateFrame { stream: S1, sequence: 1,\n  body: Live { revision: 101,\n    items: [A absent + causal data, B present + causal data],\n    complete: true\n  }\n}','complete: true'),ack()];
+      result.messages=[pushed('Live revision 101', 'StateFrame { stream: S1, sequence: 1,\n  body: Live { revision: 101,\n    items: [A absent + causal data, B present + causal data],\n    complete: true\n  }\n}','complete: true')];
       result.note='Source revisions, frame sequences, and entity causal clocks are different things. This Live publication is one logical change, even if it takes several frames.';
       break;
     case 'publish':
       result.paragraphs=['After all fragments and required entity data for revision 101 are applied, the requester publishes its membership changes and causing events together.','A later-arriving baseline inventory from revision 100 cannot undo that committed removal of A or addition of B. Applying a newer snapshot early also must not swallow the causing events when their live publication arrives.'];
       result.visual={kind:'ready',label:'A absent · B present',detail:'Committed live membership survives the older baseline.'};
-      result.messages=[request('ContinueState','ContinueState { stream: S1, round: None,\n  processed_through: 1, applied_through: Some(101), answers: []\n}'),success()];
+      result.messages=[request('StateFeedback','StateFeedback { stream: S1,\n  processed_through: 1, applied_through: Some(101), answers: None\n}'),success()];
       result.note='processed_through releases retained frames. applied_through confirms committed live-publication coverage and releases its retained repair targets.';
       break;
     case 'complete-live':
       result.paragraphs=['The requester still owes an answer to the NeedHeads(R) question from frame 0. It sends the heads from its original frozen snapshot, even though live revision 101 has now been applied.', 'The responder compares those heads and pushes the remaining membership and repairs for round 0. This final enumeration frame says progress: Complete. The requester applies it without undoing the newer live changes.'];
-      result.messages=[feedback('[Heads(TreeSpanInventory { bounds: R, heads: packed […] })]'),success(),pushed('Remaining round data · frame 2',stateBody('[Heads(responder inventory), Repair { target: Htarget, delta: … }]','Complete',2),'progress: Complete'),ack()];
+      result.messages=[feedback('[Heads(TreeSpanInventory { bounds: R, heads: packed […] })]'),success(),pushed('Remaining round data · frame 2',roundFrame('[Heads(responder inventory), Repair(Delta { target: Htarget, delta: … })]','Complete',2),'progress: Complete')];
       result.note='This example needs no further history. The next step waits for actual target coverage and installation, not just receipt of Complete.';
       break;
     case 'ready-live':
@@ -172,11 +172,11 @@ export function page(state) {
       break;
     case 'refresh':
       result.paragraphs=['An explicit refresh captures fresh requester knowledge and asks for another comparison on the existing stream. The responder marks the new round with BeginRound.','The comparison again uses captured versions. Later live publications can overlap it. The current implementation does not schedule automatic periodic refreshes.'];
-      result.messages=[request('RefreshState','RefreshState { stream: S1, round: 1, known_state: … }'),success(),pushed('BeginRound','StateFrame { stream: S1, sequence: next,\n  body: BeginRound(StateRound { number: 1, revision: 101 })\n}'),ack()];
+      result.messages=[request('RefreshState','RefreshState { stream: S1, round: 1, known_state: … }'),success(),pushed('BeginRound','StateFrame { stream: S1, sequence: next,\n  body: BeginRound(StateRound { number: 1, revision: 101 })\n}')];
       result.note='Refresh waits for the previous round to be released. Cancelling a round with FinishStateRound { outcome: Cancelled } makes no coverage claim and still preserves the stream.';
       break;
     case 'close':
-      result.paragraphs=['When the stream is no longer wanted, the requester sends AbandonStateStream. It ends that stream’s active round and live delivery.','This is a one-way message. It allocates no request waiter and expects neither a NodeResponse nor an UpdateAck.'];
+      result.paragraphs=['When the stream is no longer wanted, the requester sends AbandonStateStream. It ends that stream’s active round and live delivery.','This is a one-way message. It allocates no request waiter and expects no response.'];
       result.messages=[wire('right','AbandonStateStream','NodeMessage::AbandonStateStream','None.','AbandonStateStream { from: requester, to: responder, stream: S1 }')];
       result.note='Delayed traffic or cleanup for S1 cannot replace or tear down a newer stream. Unsubscribe, query replacement, failure and disconnect also end the appropriate subscription lifetime.';
       result.end={href:'reference.html',label:'Open the protocol reference'};

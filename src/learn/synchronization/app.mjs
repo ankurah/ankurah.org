@@ -4,29 +4,29 @@ const root=document.querySelector('[data-guide]');
 const nav=document.querySelector('[data-steps]');
 let state=parseState(location.hash,lesson);
 const escape=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+// A request gets one response; a one-way message gets none.
+const kind=type=>type.includes('NodeRequestBody::')?'Request':type.includes('NodeResponseBody::')?'Response':'One-way message';
 function sequence(messages){
   const width=640,left=80,right=560,spacing=100,height=96+messages.length*spacing;
   const arrows=messages.map((message,i)=>{
     const y=100+i*spacing;
-    const pushed=message.type.startsWith('NodeMessage::Update →');
-    const returned=message.type.includes('Response')||message.type==='NodeMessage::UpdateAck';
+    const sent=kind(message.type),frame=message.type==='NodeMessage::StateFrame';
     const from=message.direction==='right'?left:right,to=message.direction==='right'?right:left;
-    const type=message.type.includes('NodeRequestBody::') ? 'Request → '+message.type.split('NodeRequestBody::')[1]
-      : pushed ? 'Update → StateFrame'
-      : message.type.includes('NodeResponseBody::') ? 'Response → '+message.type.split('NodeResponseBody::')[1].replace('(StateReply)','')
-      : message.type.replace('NodeMessage::','');
-    const description=[pushed?message.label:message.label.includes('frame 0')?'Frame 0':'',message.progress].filter(Boolean).join(' · ');
-    return `<line x1="${from}" x2="${to}" y1="${y+48}" y2="${y+48}" stroke="${i===0?'var(--accent)':'var(--muted)'}" stroke-width="1.5" ${pushed||returned?'stroke-dasharray="4 4"':''} marker-end="url(#guide-${pushed?'open':'arrow'})"/>
+    const type=sent==='Request' ? 'Request → '+message.type.split('NodeRequestBody::')[1]
+      : sent==='Response' ? 'Response → '+message.type.split('NodeResponseBody::')[1].replace('(StateReply)','')
+      : message.type.replace('NodeMessage::','')+' (one-way message)';
+    const description=[frame?message.label:message.label.includes('frame 0')?'Frame 0':'',message.progress].filter(Boolean).join(' · ');
+    return `<line x1="${from}" x2="${to}" y1="${y+48}" y2="${y+48}" stroke="${i===0?'var(--accent)':'var(--muted)'}" stroke-width="1.5" ${frame||sent==='Response'?'stroke-dasharray="4 4"':''} marker-end="url(#guide-${sent==='One-way message'?'open':'arrow'})"/>
       <rect x="112" y="${y-16}" width="416" height="56" fill="var(--surface)"/>
       <text x="320" y="${y}" text-anchor="middle">${escape(type)}</text>
       ${description?`<text class="message-detail" x="320" y="${y+22}" text-anchor="middle">${escape(description)}</text>`:''}`;
   }).join('');
   return `<div class="sequence"><svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="guide-sequence-title guide-sequence-description">
-    <title id="guide-sequence-title">Messages for this step</title><desc id="guide-sequence-description">${escape(messages.map(m=>`${m.direction==='right'?'Requester to responder':'Responder to requester'}: ${m.type}, ${m.label}${m.progress?', '+m.progress:''}`).join('. '))}.</desc>
+    <title id="guide-sequence-title">Messages for this step</title><desc id="guide-sequence-description">${escape(messages.map(m=>`${m.direction==='right'?'Requester to responder':'Responder to requester'}, ${kind(m.type).toLowerCase()}: ${m.type}, ${m.label}${m.progress?', '+m.progress:''}`).join('. '))}.</desc>
     <defs><marker id="guide-arrow" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="context-stroke"/></marker><marker id="guide-open" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L8 4 L0 8" fill="none" stroke="context-stroke"/></marker></defs>
     <line x1="80" x2="80" y1="48" y2="${height-16}" stroke="var(--rule)" stroke-dasharray="4 4"/><line x1="560" x2="560" y1="48" y2="${height-16}" stroke="var(--rule)" stroke-dasharray="4 4"/>
     ${arrows}<rect x="16" y="8" width="128" height="40" rx="4" fill="var(--surface)" stroke="var(--rule)"/><rect x="496" y="8" width="128" height="40" rx="4" fill="var(--surface)" stroke="var(--rule)"/><text class="actor" x="80" y="36" text-anchor="middle">Requester</text><text class="actor" x="560" y="36" text-anchor="middle">Responder</text>
-  </svg></div><p class="diagram-caption">One arrow per message shown. Time runs downward; spacing is not elapsed time. Exact types and fields are below.</p>`;
+  </svg></div><p class="diagram-caption">One arrow per message shown. Time runs downward; spacing is not elapsed time. An open arrowhead marks a one-way message, which gets no response. Exact types and fields are below.</p>`;
 }
 function visual(item){
   if(!item)return '';
@@ -35,7 +35,7 @@ function visual(item){
 }
 function exact(messages){
   if(!messages.length)return '';
-  return `<details class="detail"><summary>Exact message types, replies and payloads</summary><p class="note">Schematic fields, not literal bytes. IDs, keys, digests, attestation and clock contents are abbreviated. The common routing/auth envelope is omitted.</p>${messages.map((m,i)=>`<div class="wire-message"><h3>${i+1}. ${escape(m.label)}</h3><dl><dt>Type</dt><dd>${escape(m.type)}</dd><dt>Direct reply</dt><dd>${escape(m.reply)}</dd>${m.progress?`<dt>Progress</dt><dd><code>${escape(m.progress)}</code></dd>`:''}</dl><pre>${escape(m.body)}</pre></div>`).join('')}</details>`;
+  return `<details class="detail"><summary>Exact message types, replies and payloads</summary><p class="note">Schematic fields, not literal bytes. IDs, keys, digests, attestation and clock contents are abbreviated. The common routing/auth envelope is omitted.</p>${messages.map((m,i)=>`<div class="wire-message"><h3>${i+1}. ${escape(m.label)}</h3><dl><dt>Sent as</dt><dd>${escape(kind(m.type))}</dd><dt>Type</dt><dd>${escape(m.type)}</dd><dt>Direct reply</dt><dd>${escape(m.reply)}</dd>${m.progress?`<dt>Progress</dt><dd><code>${escape(m.progress)}</code></dd>`:''}</dl><pre>${escape(m.body)}</pre></div>`).join('')}</details>`;
 }
 function navigate(next,focus=true){
   const previousStep=state.step;
