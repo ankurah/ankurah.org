@@ -48,7 +48,7 @@ export function hashFor(state) {
   return '#'+values;
 }
 export const titles = {
-  lookup:'Look for a cached tree', local:'Capture local matches', offer:'Prepare KnownState', request:'Send Fetch', compare:'Choose the next move',
+  lookup:'Look for a cached tree', local:'Snapshot local matches', offer:'Prepare KnownState', request:'Send Fetch', compare:'Choose the next move',
   equal:'Confirm equality', refine:'Compare smaller spans', heads:'Ask for entity heads', transfer:'Send the changes',
   apply:'Apply the state', repair:'Get connecting history', ready:'Return the result', finish:'Release the round',
   subscribe:'Subscribe once', overlap:'Let live changes through', publish:'Apply a live publication', 'complete-live':'Answer the round’s question', 'ready-live':'Finish this round', refresh:'Compare again', close:'End the stream'
@@ -64,13 +64,13 @@ export function page(state) {
   switch(state.step) {
     case 'lookup':
       result.paragraphs = ['A Fetch begins with its Selection. The node looks in its local LRU for a compatible resident tree. Each resident tree has a reactor subscription that updates its keys, entity IDs and cloned Clocks when entities change, and its digests once something has read one.', 'Choose whether this Fetch finds one. A compatible tree contains all the required members and can represent the query’s membership range. A limit also needs an ordering the tree’s keys can represent. Otherwise the query gets a separate bounded tree, which is also maintained through the reactor. The node also checks that access permissions allow sharing.'];
-      result.choices={field:'cache',label:'Is there a compatible tree in the cache?',options:[{value:'miss',label:'No cached tree',detail:'Capture and add one'},{value:'hit',label:'Tree already cached',detail:'Use the maintained entry'}]};
+      result.choices={field:'cache',label:'Is there a compatible tree in the cache?',options:[{value:'miss',label:'No cached tree',detail:'Build and add one'},{value:'hit',label:'Tree already cached',detail:'Use the maintained entry'}]};
       result.visual={kind:'decision',label:state.cache==='hit'?'Cache hit → reuse':'Cache miss → create',detail:'Find a tree whose TreeSpec is compatible with this Fetch’s Selection.'};
       result.note='For example, a tree covering all of project = acme AND foo > 7 can serve foo > 10 when keyed by project and foo. It cannot serve foo > 3. A tree created from a limited result initially serves only that same Selection.';
       break;
     case 'local':
-      result.title=state.cache==='hit'?'Capture the cached result':'Capture local matches and add a cache entry';
-      result.paragraphs = [state.cache==='hit'?'The node checks current access permissions and waits for the tree’s reactor updates through a finite change boundary. It captures only keys, IDs, Clocks and digests for this Fetch. The resident tree continues updating.':'The node registers a reactor subscription before reading local matches, so it cannot miss a write during admission. It builds a resident tree from their keys, IDs and cloned Clocks, then adds it to the LRU. Entity payloads read during admission are discarded. With no LIMIT, that tree covers the full predicate. A new limited query reads only its bounded result; the cache records that narrower coverage. Each key and causal head comes from the same entity version.', 'Choose the requester’s starting result. The predicate stays the same in every case.'];
+      result.title=state.cache==='hit'?'Snapshot the cached tree':'Build a cache entry from local matches and snapshot it';
+      result.paragraphs = [state.cache==='hit'?'The node checks current access permissions and waits for the tree’s reactor updates through a finite change boundary. It takes a frozen snapshot of only the tree’s keys, IDs and Clocks for this Fetch; digests read later agree with that snapshot. The resident tree continues updating.':'The node registers a reactor subscription before reading local matches, so it cannot miss a write during admission. It builds a resident tree from their keys, IDs and cloned Clocks, then adds it to the LRU. Entity payloads read during admission are discarded. With no LIMIT, that tree covers the full predicate. A new limited query reads only its bounded result; the cache records that narrower coverage. Each key and causal head comes from the same entity version.', 'Choose the requester’s starting result. The predicate stays the same in every case.'];
       result.choices={field:'local',label:'How many matches does the requester already have?',options:localOptions};
       result.visual={kind:'members',left:empty?'No matching entities':many?'4,096 matching entities':'A @ HA · B @ HB',right:empty?'Many matching entities':many?'A result to compare':'A @ HA · B @ HB2 · C @ HC'};
       result.note='An active Fetch or subscription holds a lease that pins its tree. Dropping the last lease makes the tree eligible for LRU eviction. A tree builds its digests the first time something reads one and maintains them on every commit after that; a tree used only for small head inventories never builds them. Evicting an idle tree drops its reactor subscription.';
@@ -81,23 +81,23 @@ export function page(state) {
         : [empty ? 'The requester sends one empty inventory covering the full address space. This explicitly says “I have no matches for this Selection.”' : 'The requester sends one inventory containing A and B, their tree keys, and their full causal clocks.', 'Small inventories can be sent directly, including a narrow view of a larger tree. Sending heads avoids a digest comparison round trip and reads no digests; the resident tree still keeps its keys, IDs and Clocks current.'];
       result.visual={kind:'offer',label:many?'Bounded span digests':empty?'Heads: []':'Heads: A @ HA, B @ HB',detail:many?'R1 · R2 · … cover the full address space':'One full-span inventory'};
       result.payload={label:'See the KnownState fields',body:knownState(state.local)};
-      result.note='TreeSpec defines the resident tree’s predicate and key layout. KnownState describes this query’s selected members within that layout. The captured comparison metadata stays fixed while the resident tree continues to receive updates. No entity payload is retained by either tree or comparison.';
+      result.note='TreeSpec defines the resident tree’s predicate and key layout. KnownState describes this query’s selected members within that layout. The snapshot stays fixed while the resident tree continues to receive updates. No entity payload is retained by either tree or comparison.';
       break;
     case 'request':
-      result.paragraphs=['The requester sends one Fetch request containing the Selection and its KnownState. The responder uses its own node’s shared LRU too: reuse a compatible entry or capture and add one, then compare a frozen snapshot with the offer.','The responder sends exactly one Fetch response. Its StateReply carries round 0, with the source revision its snapshot reflects, and frame 0, which names the stream. Later frames arrive as one-way StateFrame messages.'];
+      result.paragraphs=['The requester sends one Fetch request containing the Selection and its KnownState. The responder uses its own node’s shared LRU too: reuse a compatible entry or build and add one, then compare a frozen snapshot of it with the offer.','The responder sends exactly one Fetch response. Its StateReply carries round 0, with the source revision its snapshot reflects, and frame 0, which names the stream. Later frames arrive as one-way StateFrame messages.'];
       result.messages=[request('Fetch',`Fetch {\n  selection: ${selection},\n  known_state: ${knownState(state.local)}\n}`, 'NodeResponseBody::Fetch(StateReply)')];
       result.note='The next steps show what that response contains. All examples use stream S1 and round 0; names and encoded values are abbreviated.';
       break;
     case 'compare':
       result.paragraphs=empty
         ? ['The responder knows the requester’s matching result is empty. It can start sending membership heads and current entity snapshots immediately; asking for smaller digests would add no useful information.']
-        : many ? ['The responder compares the offered digests with its captured result. Equal spans need no data. For a differing span, it chooses between asking for heads and comparing smaller spans.','Choose what this comparison finds. The next steps follow that branch.']
+        : many ? ['The responder compares the offered digests with its snapshot. Equal spans need no data. For a differing span, it chooses between asking for heads and comparing smaller spans.','Choose what this comparison finds. The next steps follow that branch.']
         : ['The responder already has A’s and B’s exact clocks. It leaves unchanged A alone, prepares connecting events for newer B, and a snapshot for new member C.'];
       if(many) result.choices={field:'difference',label:'What differs?',options:differenceOptions};
       result.visual={kind:'decision',label:empty?'Known empty → heads + data':many?(state.difference==='equal'?'Equal digests → no entity data':state.difference==='small'?'Small difference → ask for heads':'Large difference → compare subspans'):'Exact clocks → send only changes',detail:empty?'No inventory question is needed.':many?'The responder chooses within its own byte and work budgets.':'A stays local. B and C need data.'};
       break;
     case 'equal':
-      result.paragraphs=['The digests and counts agree for the complete captured result. The responder returns an empty item list with progress: Complete.','It does not echo the digests or send entity heads. The existing local result has been confirmed for this round.'];
+      result.paragraphs=['The digests and counts agree for the whole snapshot. The responder returns an empty item list with progress: Complete.','It does not echo the digests or send entity heads. The existing local result has been confirmed for this round.'];
       result.messages=[response(`Fetch(StateReply { round: { number: 0, revision: 100 },\n  frame: ${roundFrame('[]','Complete')}\n})`,'progress: Complete')];
       break;
     case 'refine':
@@ -116,7 +116,7 @@ export function page(state) {
     }
     case 'transfer':
       result.paragraphs=empty
-        ? ['The Fetch response carries captured membership heads and current entity data as separate items. More arrive as numbered one-way StateFrame messages, without a request for each page.','The requester returns processed-through credit in StateFeedback so the responder can free its send buffers and keep sending. The final enumeration frame carries progress: Complete.']
+        ? ['The Fetch response carries membership heads from the responder’s tree snapshot and current entity data as separate items. More arrive as numbered one-way StateFrame messages, without a request for each page.','The requester returns processed-through credit in StateFeedback so the responder can free its send buffers and keep sending. The final enumeration frame carries progress: Complete.']
         : many ? ['The responder supplies the authoritative membership of the differing span and the entity data needed there. Matching spans need no entity transfer.','When an entity clock is known, connecting events can be used. An unknown entity usually starts with a snapshot. Large payloads are chunked.']
         : ['The Fetch response contains updated membership heads, connecting events for B and a current snapshot for C. A is unchanged and is not sent again.','This small example fits in frame 0 with progress: Complete. Larger changes can continue in separately pushed frames.'];
       result.messages=empty ? [response(roundFrame('[Heads(first membership page), Repair(Delta { target, delta: StateSnapshot(…) }), …]','Continue'),'progress: Continue'),pushed('Heads + current data · frame 1',roundFrame('[Heads(next membership page), Repair(Delta { target, delta: StateSnapshot(…) }), …]','Continue',1),'progress: Continue'),feedback(),success(),pushed('Heads + current data · frame 2',roundFrame('[Heads(last membership page), Repair(Delta { target, delta: StateSnapshot(…) }), …]','Complete',2),'progress: Complete')]
@@ -125,7 +125,7 @@ export function page(state) {
       result.note='Nothing answers a pushed frame; its credit returns in a later StateFeedback. A StateFeedback Success can arrive before or after separately pushed data; the illustration chooses one order.';
       break;
     case 'apply':
-      result.paragraphs=['The requester applies snapshots and events through normal validation. It checks that its actual entity state incorporates every target offered by this round.','A head describes membership at capture; a payload is read from the entity or storage when it is sent and may be newer. Both required heads must be incorporated. Receiving progress: Complete only ends enumeration. It does not prove that the data has been incorporated.'];
+      result.paragraphs=['The requester applies snapshots and events through normal validation. It checks that its actual entity state incorporates every target offered by this round.','A head describes membership when the responder took its tree snapshot; a payload is read from the entity or storage when it is sent and may be newer. Both required heads must be incorporated. Receiving progress: Complete only ends enumeration. It does not prove that the data has been incorporated.'];
       result.choices={field:'repair',label:'Can an offered snapshot be incorporated?',options:[{value:false,label:'Yes',detail:'The target is covered'},{value:true,label:'Needs connecting history',detail:'A concurrent local edit prevents simple adoption'}]};
       result.visual={kind:'decision',label:state.repair?'Missing history → ask for repair':'Targets covered → install the result',detail:'Application is local work; it sends no message by itself.'};
       break;
@@ -135,11 +135,11 @@ export function page(state) {
       result.note='A late repair frame can say Continue after an earlier Complete. That does not reopen enumeration. Unavailable required history fails the stream explicitly.';
       break;
     case 'ready':
-      result.paragraphs=['The round has ended enumeration, its required targets are covered, and the confirmed result membership is installed. The Fetch can now return.','The result uses the requester’s incorporated entity state. It need not have exactly the same final hashes as the captured peer state if concurrent edits were retained.'];
+      result.paragraphs=['The round has ended enumeration, its required targets are covered, and the confirmed result membership is installed. The Fetch can now return.','The result uses the requester’s incorporated entity state. It need not have exactly the same final hashes as the peer’s tree snapshot if concurrent edits were retained.'];
       result.visual={kind:'ready',label:'Fetch result is ready',detail:'No reply to a cleanup request is needed for readiness.'};
       break;
     case 'finish':
-      result.paragraphs=['The requester sends FinishStateRound with outcome: Applied. The responder releases that round’s captured metadata and retires the one-shot Fetch stream.','The comparison snapshot can be released. The resident cache entry remains available for a later Fetch and continues to consume changes until it is evicted.'];
+      result.paragraphs=['The requester sends FinishStateRound with outcome: Applied. The responder releases that round’s snapshot and retires the one-shot Fetch stream.','The requester’s snapshot can be released too. The resident cache entry remains available for a later Fetch and continues to consume changes until it is evicted.'];
       result.messages=[request('FinishStateRound','FinishStateRound {\n  stream: S1, round: 0,\n  outcome: Applied { processed_through: last_processed_sequence }\n}'),success()];
       result.note='An unfinished Fetch can instead abandon its stream. AbandonStateStream is a one-way NodeMessage with no response.';
       result.end={href:'livequery.html',label:'Next: what changes for a live query?'};
@@ -150,7 +150,7 @@ export function page(state) {
       result.messages=[request('SubscribeQuery',`SubscribeQuery { query_id: Q, version: 1,\n  selection: ${selection},\n  known_state: ${knownState('many')} }`,'NodeResponseBody::QuerySubscribed { query_id, state: StateReply }'),wire('left','QuerySubscribed · frame 0','NodeResponseBody::QuerySubscribed','None.','QuerySubscribed { query_id: Q, state: StateReply {\n  round: { number: 0, revision: 100 },\n  frame: StateFrame { stream: S1, sequence: 0,\n    body: Round { round: 0, items: [NeedHeads(R)], progress: Continue } }\n} }','progress: Continue')];
       break;
     case 'overlap':
-      result.paragraphs=['Round 0 compares the captured result at revision 100. While its head question is outstanding, live revision 101 can arrive. Live delivery is not held until the comparison finishes.','In this example, revision 101 removes A and adds B. Answers to round 0 still come from the original frozen requester snapshot.'];
+      result.paragraphs=['Round 0 compares a snapshot that reflects revision 100. While its head question is outstanding, live revision 101 can arrive. Live delivery is not held until the comparison finishes.','In this example, revision 101 removes A and adds B. Answers to round 0 still come from the original frozen requester snapshot.'];
       result.messages=[pushed('Live revision 101', 'StateFrame { stream: S1, sequence: 1,\n  body: Live { revision: 101,\n    items: [A absent + causal data, B present + causal data],\n    complete: true\n  }\n}','complete: true')];
       result.note='Source revisions, frame sequences, and entity causal clocks are different things. This Live publication is one logical change, even if it takes several frames.';
       break;
@@ -166,12 +166,12 @@ export function page(state) {
       result.note='This example needs no further history. The next step waits for actual target coverage and installation, not just receipt of Complete.';
       break;
     case 'ready-live':
-      result.paragraphs=['The livequery becomes loaded when this finite round is covered and installed, preserving newer committed changes. It does not wait indefinitely for future writes.','FinishStateRound releases only the captured round. Live delivery continues on the same stream; it was already allowed before this request.'];
+      result.paragraphs=['The livequery becomes loaded when this finite round is covered and installed, preserving newer committed changes. It does not wait indefinitely for future writes.','FinishStateRound releases only the round and its snapshot. Live delivery continues on the same stream; it was already allowed before this request.'];
       result.messages=[request('FinishStateRound','FinishStateRound { stream: S1, round: 0,\n  outcome: Applied { processed_through: last_processed_sequence }\n}'),success()];
-      result.visual={kind:'ready',label:'Loaded · stream still open',detail:'One captured comparison can finish while synchronization continues.'};
+      result.visual={kind:'ready',label:'Loaded · stream still open',detail:'One comparison round can finish while synchronization continues.'};
       break;
     case 'refresh':
-      result.paragraphs=['An explicit refresh captures fresh requester knowledge and asks for another comparison on the existing stream. The responder marks the new round with BeginRound.','The comparison again uses captured versions. Later live publications can overlap it. The current implementation does not schedule automatic periodic refreshes.'];
+      result.paragraphs=['An explicit refresh takes a fresh snapshot of the requester’s knowledge and asks for another comparison on the existing stream. The responder marks the new round with BeginRound.','The comparison again uses frozen snapshots. Later live publications can overlap it. The current implementation does not schedule automatic periodic refreshes.'];
       result.messages=[request('RefreshState','RefreshState { stream: S1, round: 1, known_state: … }'),success(),pushed('BeginRound','StateFrame { stream: S1, sequence: next,\n  body: BeginRound(StateRound { number: 1, revision: 101 })\n}')];
       result.note='Refresh waits for the previous round to be released. Cancelling a round with FinishStateRound { outcome: Cancelled } makes no coverage claim and still preserves the stream.';
       break;

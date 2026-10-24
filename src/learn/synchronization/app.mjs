@@ -30,7 +30,7 @@ function sequence(messages){
 }
 function visual(item){
   if(!item)return '';
-  if(item.kind==='members')return `<div class="exhibit"><div class="two-nodes"><div class="node"><span class="name">Requester · local snapshot</span><p>${escape(item.left)}</p></div><div class="node"><span class="name">Responder · captured result</span><p>${escape(item.right)}</p></div></div></div>`;
+  if(item.kind==='members')return `<div class="exhibit"><div class="two-nodes"><div class="node"><span class="name">Requester · local snapshot</span><p>${escape(item.left)}</p></div><div class="node"><span class="name">Responder · snapshot</span><p>${escape(item.right)}</p></div></div></div>`;
   return `<div class="exhibit outcome"><strong>${escape(item.label)}</strong><p>${escape(item.detail)}</p></div>`;
 }
 function exact(messages){
