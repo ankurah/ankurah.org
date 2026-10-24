@@ -1,5 +1,4 @@
 // Content and route decisions are separate from the browser presentation.
-// Examples describe the memory-first digest synchronization branch, not released main.
 export const selection = "project = 'acme'";
 const spec = "TreeSpec { predicate: project = 'acme', key_spec: [project: String] }";
 const span = 'TreeSpan::full()';
@@ -171,7 +170,7 @@ export function page(state) {
       result.visual={kind:'ready',label:'Loaded · stream still open',detail:'One comparison round can finish while synchronization continues.'};
       break;
     case 'refresh':
-      result.paragraphs=['An explicit refresh takes a fresh snapshot of the requester’s knowledge and asks for another comparison on the existing stream. The responder marks the new round with BeginRound.','The comparison again uses frozen snapshots. Later live publications can overlap it. The current implementation does not schedule automatic periodic refreshes.'];
+      result.paragraphs=['An explicit refresh takes a fresh snapshot of the requester’s knowledge and asks for another comparison on the existing stream. The responder marks the new round with BeginRound.','The comparison again uses frozen snapshots. Later live publications can overlap it. Ankurah does not schedule periodic refreshes; the application asks for each one.'];
       result.messages=[request('RefreshState','RefreshState { stream: S1, round: 1, known_state: … }'),success(),pushed('BeginRound','StateFrame { stream: S1, sequence: next,\n  body: BeginRound(StateRound { number: 1, revision: 101 })\n}')];
       result.note='Refresh waits for the previous round to be released. Cancelling a round with FinishStateRound { outcome: Cancelled } makes no coverage claim and still preserves the stream.';
       break;

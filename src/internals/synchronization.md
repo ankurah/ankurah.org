@@ -12,6 +12,5 @@ After Fetch, continue with [what a live query adds](../learn/synchronization/liv
 The [protocol reference](../learn/synchronization/reference.html) collects the
 message types, tree vocabulary and lifetime rules.
 
-This is a preview of the memory-first digest synchronization branch under review,
-not a description of the released protocol. Storage-backed digest trees and
-durable replication are separate work.
+Digest trees are held in memory; storage-backed trees and durable replication
+are not implemented.

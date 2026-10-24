@@ -141,12 +141,6 @@ h3 {
   margin:0
 }
 
-.preview {
-  font-size:.8rem;
-  color:var(--muted);
-  margin-top:10px
-}
-
 .layout {
   display:grid;
   grid-template-columns:220px minmax(0,1fr);
