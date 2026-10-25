@@ -5,7 +5,7 @@ const spec = "TreeSpec { key_spec: [project: String], predicate: project = 'acme
 
 // Wire bodies are schematic: names and encoded values are abbreviated.
 const nest = text => text.replaceAll('\n', '\n  ');
-const keyed = (id, clock) => `{ key: Kacme, entity: EntityHead { entity_id: ${id}, head: ${clock} } }`;
+const keyedHead = (id, clock) => `{ key: Kacme, entity: EntityHead { entity_id: ${id}, head: ${clock} } }`;
 const entityHead = (id, clock) => `EntityHead { entity_id: ${id}, head: ${clock} }`;
 // An account that lists every head of a result in one inventory over the whole tree.
 const listed = heads => `KnownState {\n  spec: ${spec},\n  spans: [Heads(TreeSpanInventory {\n    bounds: TreeSpan::all(),\n    heads: packed [${heads.length ? '\n      '+heads.join(',\n      ')+'\n    ' : ''}]\n  })]\n}`;
@@ -30,19 +30,18 @@ const update = (label, items, summary) => wire('left', label, 'NodeMessage::Upda
 const item = (id, content, relevance = '[]') => `SubscriptionUpdateItem {\n  entity_id: ${id},\n  content: ${content},\n  predicate_relevance: ${relevance}\n}`;
 const stateOf = (id, clock) => `StateAndEvent(state of ${id} at ${clock}, [])`;
 const eventsAfter = (id, clock) => `EventOnly([events of ${id} after ${clock}])`;
-const change = (id, clock) => `StateAndEvent(state of ${id} at ${clock}, [the event that made ${clock}])`;
+const liveChange = (id, clock) => `StateAndEvent(state of ${id} at ${clock}, [the event that made ${clock}])`;
 
 export function knownState(local) {
   if (local === 'many') return frontier([spanDigest('P1', 'F1', 'D1'), spanDigest('P2', 'F2', 'D2'), '…']);
-  return listed(local === 'few' ? [keyed('A','HA'), keyed('B','HB'), keyed('D','HD')] : []);
+  return listed(local === 'few' ? [keyedHead('A','HA'), keyedHead('B','HB'), keyedHead('D','HD')] : []);
 }
 // The responder's account of its result, the requester's target.
 function target(local) {
   if (local === 'many') return frontier([spanDigest('PT1', 'T1', 'DT1'), '…', spanDigest('PR', 'R', 'DR'), '…']);
-  return listed(local === 'few' ? [keyed('A','HA'), keyed('B','HB2'), keyed('C','HC')] : [keyed('E1','H1'), keyed('E2','H2'), '… 300 heads in all']);
+  return listed(local === 'few' ? [keyedHead('A','HA'), keyedHead('B','HB2'), keyedHead('C','HC')] : [keyedHead('E1','H1'), keyedHead('E2','H2'), '… 300 heads in all']);
 }
-// What the responder pushes to bring the requester's copy to the target, and
-// what a repair names again when an update carrying it is lost.
+// What the responder pushes to bring each starting copy to the target.
 const pushes = {
   none: () => [
     update('Update · items 1–128', [item('E1', stateOf('E1','H1')), '…'], '128 items'),
@@ -52,6 +51,8 @@ const pushes = {
   few: () => [update('Update', [item('B', eventsAfter('B','HB')), item('C', stateOf('C','HC')), item('D', eventsAfter('D','HD'))], '3 items')],
   many: () => [update('Update', [item('J', eventsAfter('J','HJ')), item('K', stateOf('K','HK')), item('L', eventsAfter('L','HL'))], '3 items')],
 };
+// The repair after the update carrying those pushes is lost: the entities the
+// requester names again, the responder's answer, and the pushes once more.
 const repairs = {
   none: () => [syncEntities([entityHead('E129','[]'), '… 128 entities in all']), entitiesSynced([entityHead('E129','H129'), '…'], '128 held heads'), update('Update · items 129–256', [item('E129', stateOf('E129','H129')), '…'], '128 items')],
   few: () => [syncEntities([entityHead('B','HB'), entityHead('C','[]'), entityHead('D','HD')]), entitiesSynced([entityHead('B','HB2'), entityHead('C','HC'), entityHead('D','HD2')]), ...pushes.few()],
@@ -142,7 +143,7 @@ export function page(state) {
       result.note=many?'The target’s spans need not line up with the offer’s: the requester computes its own digest over each target span’s bounds.':'The push task starts before the response goes out, so pushes can arrive before, between or after it.';
       break;
     case 'target':
-      result.paragraphs=['The requester takes a fresh snapshot of its tree under the target’s TreeSpec and computes its own digest over each target span’s bounds. A span whose digests agree is matched and needs nothing more.','A span whose digests differ is repaired at once, without waiting, because the responder pushed nothing for spans the offer described by digest. Choose what this comparison finds. The next steps follow that branch.'];
+      result.paragraphs=['The requester takes a fresh snapshot of its tree under the target’s TreeSpec and computes its own digest over each target span’s bounds. A span whose digests agree is matched and needs nothing more.','A span whose digests differ is repaired at once, without waiting, because the responder pushed nothing for spans the offer described by digest. Choose what this comparison finds. The next steps follow that path.'];
       result.choices={field:'difference',label:'What differs?',options:differenceOptions};
       result.visual={kind:'decision',label:{equal:'Every digest agrees → ready',small:'R differs, counting 32 heads → ask for them',large:'R differs, counting 512 heads → compare its parts'}[state.difference],detail:{equal:'The copy matches the target without any entity data.',small:'One page holds up to 128 heads.',large:'R holds more heads than one page, so the requester splits it first.'}[state.difference]};
       break;
@@ -154,7 +155,7 @@ export function page(state) {
     case 'heads': {
       const bounds = state.difference==='large'?'R2':'R';
       result.paragraphs=[`The requester asks for the responder’s heads in ${bounds}. A page holds at most 128 heads and 64 KiB of work; one that stops short ends at its last head, and the requester asks for the rest.`,'It checks each head against its copy: covered when the copy holds that head or a causally newer one. Here J is held at an older head and K is missing, and the copy holds L within the span, which the page does not list.'];
-      result.messages=[compareSpans([`Heads(${bounds})`]),spansCompared([headsPage(bounds,[keyed('J','HJ2'),keyed('K','HK'),'… 32 heads in all'])],'a page of 32 heads')];
+      result.messages=[compareSpans([`Heads(${bounds})`]),spansCompared([headsPage(bounds,[keyedHead('J','HJ2'),keyedHead('K','HK'),'… 32 heads in all'])],'a page of 32 heads')];
       break;
     }
     case 'sync':
@@ -199,12 +200,12 @@ export function page(state) {
       break;
     case 'subscribe':
       result.paragraphs=['A live query keeps a query’s result current. The node’s subscription relay sends one SubscribeQuery to a durable peer, with a query ID, a version, the Selection and a KnownState of the local copy, made as for a Fetch. Here the requester holds A and B, so it lists both heads, and the relay marks the query Requested.','The responder installs the query in its reactor subscription for this peer before it takes the snapshot it compares. A commit after the install reaches the requester as a live update, a commit before the snapshot is in the comparison, and a commit between does both, which applying twice tolerates. The responder then compares, starts pushing what the requester lacks, and answers with its target.'];
-      result.messages=[subscribeQuery(listed([keyed('A','HA'),keyed('B','HB')])),querySubscribed(listed([keyed('A','HA'),keyed('B','HB2'),keyed('C','HC')]),'target: 3 heads')];
+      result.messages=[subscribeQuery(listed([keyedHead('A','HA'),keyedHead('B','HB')])),querySubscribed(listed([keyedHead('A','HA'),keyedHead('B','HB2'),keyedHead('C','HC')]),'target: 3 heads')];
       result.note='QuerySubscribed says the query is installed and names the target. The result has not loaded until the copy reaches the target.';
       break;
     case 'initial':
       result.paragraphs=['The responder pushes B and C on the update channel, as it pushes a Fetch’s data, but tags each item (Q, Initial), the tag for a subscription’s initial data.','Meanwhile a write to A commits on the responder after the install. The responder’s reactor subscription pushes it as a live update carrying A’s new state and the event that made it, with no tag, because A still matches. It may arrive before or after the initial pushes; the requester applies whatever arrives.'];
-      result.messages=[update('Initial update',[item('B',eventsAfter('B','HB'),'[(Q, Initial)]'),item('C',stateOf('C','HC'),'[(Q, Initial)]')],'2 items · (Q, Initial)'),update('Live update',[item('A',change('A','HA2'))],'1 item')];
+      result.messages=[update('Initial update',[item('B',eventsAfter('B','HB'),'[(Q, Initial)]'),item('C',stateOf('C','HC'),'[(Q, Initial)]')],'2 items · (Q, Initial)'),update('Live update',[item('A',liveChange('A','HA2'))],'1 item')];
       result.note='The tags record how membership changed on the responder. The requester’s applier does not read them: its own reactor decides membership.';
       break;
     case 'established':
@@ -214,17 +215,17 @@ export function page(state) {
       break;
     case 'live':
       result.paragraphs=['From now on the responder’s reactor subscription for this peer pushes every committed change to an entity the query watches. Here one transaction makes D match, makes C stop matching, and changes B, which still matches.','The requester applies the update, and its own reactor decides what each change means: D joins the local result, C leaves it, and B’s new head replaces the old one. Reactor maintenance updates the requester’s resident tree as each change commits, so the copy the next check reads is current.'];
-      result.messages=[update('Live update',[item('D',change('D','HD'),'[(Q, Add)]'),item('C',change('C','HC2'),'[(Q, Remove)]'),item('B',change('B','HB3'))],'3 items')];
+      result.messages=[update('Live update',[item('D',liveChange('D','HD'),'[(Q, Add)]'),item('C',liveChange('C','HC2'),'[(Q, Remove)]'),item('B',liveChange('B','HB3'))],'3 items')];
       result.note='Nothing waits on a live update: the receiver acknowledges it, but no sender reads the acknowledgment. A lost live update goes unnoticed until the entity changes again, the peers reconnect, or a periodic check finds it.';
       break;
     case 'check':
       result.paragraphs=['Thirty seconds after establishment, the relay checks the copy with one CompareSpans holding one question about the whole tree: its heads, when the copy fits one page of 128 as it does here, so that a small live query never builds a digest tree; otherwise its digest.','The answer lists A at HA2, B at HB3 and D at HD. The copy covers each head and holds no member the answer leaves out, so the check agrees. While checks agree, each waits twice as long as the one before, up to 5 minutes: 60 s, 120 s, 240 s, then every 5 minutes.'];
-      result.messages=[compareSpans(['Heads(TreeSpan::all())']),spansCompared([headsPage('TreeSpan::all()',[keyed('A','HA2'),keyed('B','HB3'),keyed('D','HD')])],'a page of 3 heads')];
+      result.messages=[compareSpans(['Heads(TreeSpan::all())']),spansCompared([headsPage('TreeSpan::all()',[keyedHead('A','HA2'),keyedHead('B','HB3'),keyedHead('D','HD')])],'a page of 3 heads')];
       result.note='The relay starts due checks on its five-second timer. A check that gets no answer within the idle interval counts as a disagreement.';
       break;
     case 'recheck':
       result.paragraphs=['A live update carrying B’s next change, to HB4, is lost. The next check’s answer lists B at HB4, which the copy does not cover, so the check disagrees. One disagreement can be an update still in flight, so the relay checks again 30 s later instead of repairing.','The second check disagrees too, so the requester repairs at once: it names B in SyncEntities with the head it holds, HB3, and the responder pushes B’s events after HB3. The copy now covers B at HB4, and the next check comes 30 s later, with the waits doubling again while checks agree.'];
-      result.messages=[compareSpans(['Heads(TreeSpan::all())']),spansCompared([headsPage('TreeSpan::all()',[keyed('A','HA2'),keyed('B','HB4'),keyed('D','HD')])],'the second check · B at HB4'),syncEntities([entityHead('B','HB3')]),entitiesSynced([entityHead('B','HB4')]),update('Update',[item('B',eventsAfter('B','HB3'))],'1 item')];
+      result.messages=[compareSpans(['Heads(TreeSpan::all())']),spansCompared([headsPage('TreeSpan::all()',[keyedHead('A','HA2'),keyedHead('B','HB4'),keyedHead('D','HD')])],'the second check · B at HB4'),syncEntities([entityHead('B','HB3')]),entitiesSynced([entityHead('B','HB4')]),update('Update',[item('B',eventsAfter('B','HB3'))],'1 item')];
       result.note='Where a check asks for a digest, the repair first descends to pages of heads, as a Fetch’s repair does.';
       break;
     case 'unsubscribe':
