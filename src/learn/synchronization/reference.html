@@ -31,7 +31,7 @@
 <section id="messages"><h2>Messages and their direct replies</h2>
 <div class="table-scroll"><table><thead><tr><th>Sent</th><th>Direct reply</th><th>What it does</th></tr></thead><tbody>
 <tr><td><code>Request → Fetch</code></td><td><code>Response → Fetch(KnownState)</code></td><td>Offers the requester’s copy of a result. The reply is the target; the data arrives as updates.</td></tr>
-<tr><td><code>Request → SubscribeQuery</code></td><td><code>Response → QuerySubscribed { query_id, target }</code></td><td>Installs the query in the responder’s subscription for this peer, then offers and answers as Fetch does. Its initial data arrives as updates tagged <code>(query_id, Initial)</code>.</td></tr>
+<tr><td><code>Request → SubscribeQuery</code></td><td><code>Response → QuerySubscribed { query_id, target }</code></td><td>Installs the query in the responder’s subscription for this peer, then compares and answers as for a Fetch. Its initial data arrives as updates tagged <code>(query_id, Initial)</code>.</td></tr>
 <tr><td><code>Request → CompareSpans</code></td><td><code>Response → SpansCompared { answers }</code></td><td>Asks for the responder’s digests of spans of its result, or pages of its heads, from a fresh snapshot.</td></tr>
 <tr><td><code>Request → SyncEntities</code></td><td><code>Response → EntitiesSynced { held, unavailable }</code></td><td>Asks the responder to push named entities from the heads the requester holds. The data arrives as updates.</td></tr>
 <tr><td><code>Update → SubscriptionUpdate</code></td><td><code>UpdateAck</code>, which the sender does not read</td><td>Carries entity states and events: a comparison’s pushes and a subscription’s live changes.</td></tr>
