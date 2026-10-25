@@ -88,7 +88,7 @@ digests, and whenever its copy stops progressing short of the target.
 `CompareSpans` asks for the responder's digests of spans of its result or a
 page of its heads, and `SyncEntities` names the entities to push, whose data
 again arrives as updates. The
-[synchronization guide](synchronization.md) walks through each step, and its
+[synchronization guide](../learn/synchronization.md) walks through each step, and its
 [reference](../learn/synchronization/reference.html) lists the messages,
 readiness rules and limits.
 
