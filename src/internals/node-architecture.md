@@ -149,7 +149,10 @@ against the durable peer's result periodically: first 30 seconds after it is
 established, then twice as long after each check that agrees, up to every 5
 minutes. Because updates still in flight can explain one disagreement, the
 query repairs its copy only when two checks in a row disagree, and checks again
-30 seconds after a disagreement or a repair.
+30 seconds after a disagreement or a repair. A repair whose data fails to apply
+leaves the query established with that entity stale, as a live update that
+fails to apply does; its checks back off as if they agreed, and the next one
+that disagrees repairs without waiting for a second.
 
 Each subscription carries context data used for policy validation of incoming
 events and state.
