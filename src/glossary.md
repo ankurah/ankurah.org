@@ -19,6 +19,10 @@ pub struct Album {
 This generates `AlbumView` and `AlbumMut` alongside the user-defined `Album`
 create input.
 
+### Component
+
+An entity-membership set with an associated property schema. An entity can have multiple components. Existing APIs still call this `Model` and identify it with `ModelId`. See [Querying Several Components](queries/components.md).
+
 ### Collection
 
 A named group of entities described by the same Model. It is similar to a table in a traditional database, although its physical representation depends on the storage engine. PostgreSQL and SQLite use per-collection state and event tables.

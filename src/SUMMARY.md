@@ -14,6 +14,7 @@
 - [Choosing a Merge Strategy (LWW vs Yrs)](models/merge-strategy.md)
 - [Querying Data](queries/index.md)
 - [Query Syntax (AnkQL)](queries/syntax.md)
+- [Querying Several Components](queries/components.md)
 - [Reactivity & Signals](reactivity/index.md)
 - [React Bindings](reactivity/react.md)
 - [Authentication & Policy](guides/auth.md)

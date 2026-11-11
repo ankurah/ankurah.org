@@ -71,6 +71,36 @@ Use `ORDER BY` to sort results:
 
 <pre><code transclude="example/server/src/main.rs#syntax-order-asc">let albums: Vec&lt;AlbumView&gt; = ctx.fetch(&quot;true ORDER BY name ASC&quot;).await?;</code></pre>
 
+## Missing Values
+
+`IS NULL` is true for an entity that has no value for the property, or for a
+path into a JSON property that does not exist. `IS NOT NULL` is true where a
+value is present:
+
+```text
+field IS NULL
+field IS NOT NULL
+```
+
+A comparison with a missing value never matches, also beneath `NOT`: an entity
+with no `year` matches neither `year > 1985` nor `NOT year > 1985`.
+
+## Naming a Component's Property
+
+> **0.10 preview.** Not in a published release yet.
+
+An entity can have several components, and a query can name the component a
+property belongs to. Write the component before the property, joined by `::`
+with no spaces:
+
+```text
+Assignment::assignee = 'ada'
+status = 'open' ORDER BY Assignment::assignee
+```
+
+See [Querying Several Components](components.md) for when a qualifier is
+needed and what it means for an entity that lacks the component.
+
 ## Selecting All Entities
 
 Use `true` to match all entities:
@@ -182,4 +212,5 @@ let exists = matching_albums.len() &gt; 0;</code></pre>
 ## Next Steps
 
 - [Querying Data](index.md) - Overview of fetch vs query
+- [Querying Several Components](components.md) - Query a tuple of Views of one entity
 - [React Bindings](../reactivity/react.md) - Using queries in React components
