@@ -82,8 +82,8 @@ A collection of entities in a storage engine. The physical representation of a C
 
 ## Digest Trees (0.10)
 
-These terms describe the [digest-tree foundation](digest-tree/index.md).
-Node integration is still to come.
+These terms describe the [digest-tree preview](digest-tree/index.md), including
+Node-owned maintenance on the pinned, unmerged implementation branch.
 
 ### Member
 
@@ -135,8 +135,35 @@ members beneath it. An Ankurah Node, by contrast, is a network participant.
 
 A predicate together with optional ordering and limit. A resolved Selection
 identifies properties by their resolved IDs. TreeManager currently looks up
-exact Selections and maintains their full predicate membership; a query
-caller applies the read limit.
+exact Selections and maintains their result membership, including `LIMIT`.
+Limited selections use the storage engine's actual query result and refills.
+
+### TreeManager
+
+The Node-owned component that opens and retains trees for exact Selections
+and reconciles their membership with canonical entity state. Its bounded
+strong LRU retains recent trees; its weak registry also finds trees kept
+alive by callers, views or streams.
+
+### State Cursor
+
+An opaque, storage-local token describing a validated canonical-state read
+boundary. A tree persists its cursor with its derived records so it can
+recover changes after restart. It is not a causal clock or peer inventory,
+and its bytes must not be compared as sequence numbers.
+
+### Write-behind
+
+Deferred persistence of maintained tree records. Canonical entity state is
+already durable; the tree's records, member lookup, generation log and cursor
+flush atomically later. The default is 1,024 changed entities or 250 ms after
+a maintained batch. See [Node Lifecycle](digest-tree/node-lifecycle.md).
+
+### KnownState
+
+The digest summary sent with a fetch or subscription request's `known_matches`.
+Both describe one authorized canonical version. In this preview, receivers
+still use only `known_matches` for transfer decisions and completion.
 
 ## Operations
 

@@ -1,32 +1,34 @@
 # Tree Management
 
 `ankurah_core::sync::TreeManager` connects core's entities and Selections to
-the generic digest-tree crate. It can open trees, retain recent ones, route
-explicitly supplied entity changes to live trees, and rebuild a tree.
+the generic digest-tree crate. Each Node owns one manager shared by fetch
+and live-query setup. It opens trees, retains recent ones, and reconciles
+their membership with canonical entity state.
 
-**Node does not own or invoke TreeManager yet.** The intended integration is
-one manager per Node. The behavior below is implemented and exercised by
-callers in tests; automatic Node maintenance comes later.
+This chapter describes the [pinned, unreleased Node preview](index.md).
 
 ## One Selection, one lookup
 
 `open(selection)` looks up the exact resolved Selection. Display-only property
 labels are canonicalized, while predicate structure, property IDs, ordering
 and `LIMIT` remain part of its identity. If the tree is still alive, opening
-reuses it. Otherwise the manager rebuilds its full predicate membership from
-canonical entity state before returning it.
+reuses it and reconciles it before returning. Otherwise the manager opens
+its backing tree and catches up from its durable cursor, or reconstructs
+membership if no usable cursor remains.
 
 A stable backing tree ID lets a rebuild reuse the existing storage namespace.
 Persisted data surviving a restart is not evidence that it includes every
-entity change made since the tree was last maintained.
+entity change made since the tree was last maintained; the cursor establishes
+where reconciliation must resume.
 
 `view(selection)` follows the same opening path and returns the digest crate's
 existing `DigestTreeView`. There is no separate core view wrapper.
 
-Selections with different limits currently get separate lookups, even though
-both trees contain full membership and a caller applies the read limit.
-Compatible Selection sharing is an optimization for later; reversing an
-ordering, for example, must preserve missing-value placement and ID ties.
+Selections with different limits get separate lookups and different
+membership. A limited tree contains the engine's query result, including
+refill candidates when previous members leave. An unlimited tree contains
+all matches without requiring a separate permanent result set of those
+entities. Sharing trees across compatible Selections remains future work.
 
 ## Two kinds of memory retention
 
@@ -54,49 +56,45 @@ maintenance. Only after the last strong owner disappears does that tree stop
 being available through the registry. Eviction does not delete its backing
 storage.
 
-## Maintenance needs a caller
+## Node maintains every live tree
 
-`TreeManager::apply` accepts stable before/after entity versions and the
-caller's storage transaction. It evaluates each live tree's predicate against
-both versions, then inserts, updates or removes the member as appropriate.
-The member's payload is its head `Clock`; its key comes from the properties
-specified by the tree's `KeySpec`.
+Before polling a canonical commit, Node invalidates its maintained views
+while holding the publication lock. Those views cannot present the old
+tree as current. The background worker reconciles committed state even if
+the initiating request is cancelled. Query opening also reconciles before
+serving the tree.
 
-Maintenance is version-checked: after A→B lands, replaying A→B names an old
-version and can be refused. The caller must supply the versions that the
-actual entity transition replaces.
+Reconciliation reads canonical state at one engine boundary and builds a
+private tree version. Only a successfully validated source read permits
+publication. The member's payload is its head `Clock`; its key comes from
+the properties in the tree's `KeySpec`. A persisted member lookup supplies
+the former key and head when an entity moves or leaves the Selection.
 
-The caller must coordinate entity writers with the publication lock supplied
-to the manager. The required sequence covers maintenance, storage commit,
-reporting tree writes landed, and publication of entity state. Opening holds
-the same gate across its scan and registration, preventing a cooperating
-writer from slipping a change between them. The caller must not call `open`
-while holding that gate.
+One failing tree does not prevent maintenance of other trees. The worker
+holds only a weak manager reference while waiting, and Node shutdown cancels
+an active source read. It therefore does not keep a dropped Node alive.
 
-This is an integration obligation, not a background worker hidden inside the
-manager. A process-local gate also cannot coordinate independent Nodes sharing
-PostgreSQL; the future continuation design must account for those writers.
+The publication lock coordinates this Node's writers. Independent Nodes
+sharing storage also need the [engine read boundary and conditional
+flush](storage.md#canonical-state-is-the-recovery-source). A flush validates
+the exact durable tree generation under its named lock; a conflict causes
+refresh and reconciliation rather than overwriting another Node's progress.
 
-## Recovery is explicit
+## Recovery and reconstruction
 
-`refresh(selection)` rebuilds even when a tree is still live. It provides a
-recovery primitive for a committed maintenance refusal or a storage reset.
-`open` can reuse a live handle without detecting that it requires recovery.
+Ordinary opening reconciles from the last valid cursor. An invalid cursor,
+such as one from another storage incarnation, causes full reconstruction.
+`refresh(selection)` explicitly rebuilds membership even when a tree is
+still live; existing views share the adapter and observe the completed
+replacement after publication.
 
-A rebuild within the same incarnation preserves existing handle ownership.
-After a reset or drop, a new incarnation replaces the old one, whose handles
-remain retired. A failed rebuild does not replace the manager's registration.
-Corrupt records or incompatible key specifications can still make rebuilding
-fail; refresh is not an unconditional repair of arbitrary damage.
+Unlimited initial builds persist bounded pages with status `Building` and no recovery
+cursor. They can resume through an idempotent full scan; ordinary opening
+does not expose a partial build as ready. Only a completed, validated scan
+establishes the cursor. Corrupt records or incompatible key specifications
+can still make opening or refresh fail.
 
-## What comes next
-
-Node integration must supply the actual commit and publication wiring.
-Maintenance continuation must cover missed changes across eviction, recall
-and restart. Write-behind must distinguish the progress held in memory from
-the progress durably persisted. Incremental recovery must also cover adopted
-state snapshots, not only ordinary event arrivals.
-
-The current rebuild path is the available fallback. No durable replay cursor,
-automatic catch-up protocol, deferred tree flush, or comparison network
-message is implied by the APIs described here.
+Large incremental catch-up and explicit refresh can still accumulate a large
+transient overlay. The LRU bounds retained handles, not that work's temporary
+memory. [Node Lifecycle](node-lifecycle.md) follows the separate maintenance
+and persistence boundaries with an executable example.

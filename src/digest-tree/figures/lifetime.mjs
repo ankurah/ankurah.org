@@ -9,7 +9,7 @@ function render(message) {
       created = key === "a" || state.createdB;
     card.className = `tree-card ${live[key] ? "live" : "expired"}`;
     card.querySelector(".state").textContent = live[key]
-      ? "Eligible for the next explicit apply call"
+      ? "Available to the Node's maintenance worker"
       : created
         ? "No live owner remains"
         : "Not opened yet";
@@ -32,7 +32,7 @@ function render(message) {
   $("#stream").disabled = !live.a;
   $("#storage-b").hidden = !state.createdB;
   $("#caption").innerHTML =
-    `<strong>${message}</strong><p>${live.a ? "A remains available to maintenance while any displayed owner keeps it alive." : "Reopen A to obtain another view or stream. Its backing storage remains, but its contents must be rebuilt before reuse."}</p>`;
+    `<strong>${message}</strong><p>${live.a ? "A remains available to maintenance while any displayed owner keeps it alive." : "Reopen A to obtain another view or stream. Its durable cursor supports catch-up; a missing or invalid boundary requires reconstruction."}</p>`;
 }
 function reset() {
   state = { retained: "a", view: true, stream: false, createdB: false };
@@ -44,7 +44,7 @@ $("#open-a").addEventListener("click", () => {
   render(
     alive
       ? "Opening A reuses its live tree and retains it again."
-      : "Opening A rebuilds its persisted contents and registers a live tree.",
+      : "Opening A reconciles its durable contents and registers a live tree.",
   );
 });
 $("#open-b").addEventListener("click", () => {

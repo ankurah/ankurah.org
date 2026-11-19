@@ -12,7 +12,8 @@
       <h1>Evicted does not mean unowned.</h1>
       <p class="intro">
         The manager's LRU has room for one tree. Open B to evict A, then release
-        A's view. Watch which trees an explicit maintenance call can still find.
+        A's view. Watch which trees the Node's maintenance worker can still
+        find.
       </p>
       <div class="controls">
         <button id="open-a">Open tree A</button
@@ -52,17 +53,19 @@
         aria-atomic="true"
       ></div>
       <p class="note">
-        Opening leaves the returned tree retained only by the LRU; the checkboxes add caller ownership. The weak registry does not own a tree. Views, streams and transactions
-        own strong handles even after LRU eviction. Expired registry entries are
-        pruned during lookup/insertion or enumeration. This illustrates existing
-        manager ownership; Node does not yet drive maintenance.
+        Opening leaves the returned tree retained only by the LRU; the
+        checkboxes add caller ownership. The weak registry does not own a tree.
+        Views, streams and transactions own strong handles even after LRU
+        eviction. Expired registry entries are pruned during lookup/insertion or
+        enumeration. Each Node owns its manager and drives maintenance. The
+        waiting worker does not keep the Node alive.
       </p>
       <noscript
         ><p>
           Initially A is retained and has a view. Opening B evicts the LRU's A
           handle, but the view keeps A alive. Releasing that last view makes A's
-          weak reference expire. Reopening A then rebuilds its persisted
-          contents.
+          weak reference expire. Reopening A reconciles from its durable cursor,
+          or reconstructs it if no valid recovery boundary remains.
         </p></noscript
       >
     </main>

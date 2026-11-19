@@ -1,13 +1,16 @@
 # Storage and Transactions
 
 A tree describes records owned by something else. Core's trees describe
-entities. If an entity changed but its tree did not, the digest could report
-agreement for data that no longer agrees. The tree's persistent records and
-the entity records they describe must therefore commit together.
+entities. If an entity changed but an old tree were still advertised as
+current, its digest could report agreement for data that no longer agrees.
+Node prevents that by invalidating maintained views before a canonical
+commit, then publishing a reconciled tree only after validating its source.
 
-The machinery for doing this exists on all four storage engines. Node does
-not yet call it as part of its commit path; this chapter explains the
-available contract and how its caller must use it.
+Canonical entity writes and deferred tree writes have separate durable
+boundaries. The tree's records and recovery cursor must persist together,
+so a restart can recover any changes not yet flushed. The underlying adapter
+also supports explicitly writing entities and tree records in one storage
+transaction.
 
 ## Three layers, three jobs
 
@@ -39,7 +42,7 @@ A changed member updates its record and the tree-node records along its path.
 It does not require storing a complete new comparison page. Pages are assembled
 from records when requested.
 
-## Prepare, apply, commit, publish
+## The explicit transaction contract
 
 The owner supplies the existing member version when updating or removing it.
 The tree validates that version rather than silently replacing whatever it
@@ -61,8 +64,9 @@ Tree preparation and application write through that transaction. Only after
 the storage commit succeeds does the owner report the write as `landed`,
 which publishes eligible changes into the in-memory record cache.
 
-Explore the boundary below. The diagram describes an explicit caller of the
-storage/adapter APIs, not an already integrated Node commit path.
+Explore the boundary below. This is the lower-level adapter contract for an
+explicit caller putting entity and tree writes in one transaction.
+Node's automatic write-behind flow is shown in [Node Lifecycle](node-lifecycle.md).
 
 <iframe class="digest-figure" src="figures/transaction.html" title="Explore atomic entity and tree writes through commit or rollback" loading="lazy" style="width:100%;height:680px;border:0"></iframe>
 
@@ -72,11 +76,10 @@ The storage commit is the atomic boundary. Cache publication follows a
 successful commit and touches memory only. Calling `landed` before commit
 would make the cache claim a state that storage might never accept.
 
-Core can also commit an entity change together with a marker invalidating a
-tree that refused maintenance. Reads of that tree then fail instead of
-serving stale digests. Recovering it uses the manager's explicit
-[`refresh`](management.md#recovery-is-explicit) operation; deciding when to
-recover belongs to the caller.
+Node reconciliation instead prepares a private buffered version. Its flush
+atomically persists tree records, the member-key lookup, the generation log
+and the durable cursor. These records describe one completed canonical read
+boundary, even while later entity changes are already durable.
 
 ## Ordered maps, named locks, snapshots
 
@@ -103,8 +106,46 @@ The contract is common; identical lock implementation or concurrency is not
 promised. An IndexedDB named lock does not hold a mutex in another browser tab.
 
 Some engines buffer map writes within a storage transaction. That staging
-ends at commit. It is different from the future **write-behind** mechanism,
-which will allow tree persistence to lag behind maintained in-memory state.
+ends at commit. **Write-behind** lets tree persistence lag behind maintained
+in-memory state across transactions; it does not defer canonical durability.
+
+## Canonical state is the recovery source
+
+Every canonical entity state carries an engine-owned last-change marker
+written in the same transaction as that state. Adopting a snapshot advances
+the marker; merely caching events does not. Recovery therefore includes
+snapshot adoption without needing every intervening event.
+
+`StorageEngine::state_snapshot(StateScan)` establishes one read boundary:
+
+| Scan | What its pages contain |
+|---|---|
+| `Changes(cursor)` | Latest visible states of identities changed since the cursor; no cursor means a full scan |
+| `Selection(selection)` | The engine's complete limited-query result, including unchanged replacement members |
+
+Point reads use that same boundary. `finish()` validates and closes the
+snapshot and returns an opaque `StateCursor`. A failed or cancelled finish
+establishes no coverage: the manager discards that attempt instead of
+publishing a partially reconciled tree. Several changes to one entity can
+be coalesced into its latest visible state.
+
+The cursor belongs to one storage incarnation. It is neither an entity's
+causal clock nor a peer's known state, and the manager must not interpret
+its bytes as a maximum sequence number.
+
+### PostgreSQL includes late commits
+
+PostgreSQL transaction IDs are not commit-order numbers. Its cursor records
+a native snapshot boundary and transactions still in progress there. For
+example, writer 96 can still be running when writer 100 has committed. A
+boundary at 101 remembers 96, so its later commit remains eligible for the
+next scan. If 96 aborts there is no state to include; if it remains active,
+the next cursor retains the exception. No fixed timeout is assumed.
+
+Sled, SQLite and IndexedDB use transactional state counters and incarnation
+checks. Engines either hold a native snapshot or reject a read whose
+canonical boundary moves. A moved active read is retryable; a saved cursor
+from another incarnation requires reconstruction.
 
 ## Record caching belongs to the adapter
 
@@ -114,5 +155,6 @@ eviction policy. Their records remain scoped to distinct trees.
 
 The adapter reconciles its cached generation with the persisted tree's
 generation and change log. This catches up a cache with tree writes that
-have already committed. It does **not** replay entity changes that happened
-while a tree was not maintained. That continuation is separate future work.
+have already committed. Canonical-state continuation is a separate job:
+the manager uses the cursor to reconcile entity changes that the persisted
+tree has not yet covered.

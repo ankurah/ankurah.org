@@ -63,13 +63,23 @@ instant.
 Both a view and a range stream keep the underlying tree alive. That becomes
 important when [TreeManager](management.md) evicts its own retained handle.
 
-## Membership and query limits are different
+## A limited Selection has limited membership
 
 The generic tree has no Selection or predicate evaluator. Its owner decides
-what belongs. Core's manager builds a tree for the full membership of a
-resolved Selection, even when that Selection has a `LIMIT`.
+what belongs. Core's manager maintains the exact resolved Selection's result,
+including `LIMIT`. For a limited Selection it reads the engine's actual query
+result again during reconciliation, so an unchanged candidate can refill a
+place vacated by another member. It does not keep every predicate match in
+the limited tree or reproduce the engine's query in a second sorter.
 
-A query caller applies its read limit. Truncating the maintained membership
-to the first few members would lose the candidates needed when one of those
-members leaves the result. Exact Selection matching and possible future tree
-sharing are covered in [Tree Management](management.md#one-selection-one-lookup).
+For limited queries, the storage engines add ascending entity-ID order to
+break ties unless an explicit ID order already supplies it. An explicit
+`id DESC` remains descending.
+This determines which tied members enter a limited result; the generic
+address encoding described above still distinguishes every member.
+Existing cross-engine NULL and JSON ordering differences remain.
+
+Different limits identify different trees. See
+[Tree Management](management.md#one-selection-one-lookup) for exact lookup
+and retention. A limit bounds the tree's membership, not necessarily the
+query work or temporary memory an engine needs to find those members.

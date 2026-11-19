@@ -46,6 +46,7 @@
   - [Pages and Comparison](digest-tree/comparison.md)
   - [Storage and Transactions](digest-tree/storage.md)
   - [Tree Management](digest-tree/management.md)
+  - [Node Lifecycle](digest-tree/node-lifecycle.md)
 - [Node Architecture and Replication](internals/node-architecture.md)
 - [Property Backends](internals/property-backends.md)
 - [LWW Merge Resolution](internals/lww-merge.md)

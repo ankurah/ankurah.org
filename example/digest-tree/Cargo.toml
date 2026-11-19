@@ -4,13 +4,17 @@ version = "0.0.0"
 edition = "2021"
 publish = false
 
-# This preview follows the merged implementation until 0.10 is released.
+# This preview pins the implemented, unmerged Node integration branch.
 [dependencies]
-ankurah-core-types = { git = "https://github.com/ankurah/ankurah", rev = "ec7a15625900fcec0403176f03713acaef1280df" }
-ankurah-digest-tree = { git = "https://github.com/ankurah/ankurah", rev = "ec7a15625900fcec0403176f03713acaef1280df", features = ["test-support"] }
+ankurah = { git = "https://github.com/ankurah/ankurah", rev = "d635ea5358396a2812526175f30471266ab7d8bb", features = ["derive"] }
+ankurah-core-types = { git = "https://github.com/ankurah/ankurah", rev = "d635ea5358396a2812526175f30471266ab7d8bb" }
+ankurah-digest-tree = { git = "https://github.com/ankurah/ankurah", rev = "d635ea5358396a2812526175f30471266ab7d8bb", features = ["test-support"] }
+ankurah-storage-sqlite = { git = "https://github.com/ankurah/ankurah", rev = "d635ea5358396a2812526175f30471266ab7d8bb" }
 anyhow = "1"
 futures = "0.3"
+serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tempfile = "3"
 tokio = { version = "1", features = ["macros", "rt"] }
 
 # Keep this preview independent of the website's application example.

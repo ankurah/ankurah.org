@@ -1,16 +1,19 @@
 # Digest Trees
 
 <div class="digest-lead">
-<p class="eyebrow">Ankurah 0.10 · How the foundation works</p>
+<p class="eyebrow">Ankurah 0.10 · Digest trees and Node maintenance</p>
 <p class="lead">Find the difference without sending everything.</p>
 <p>Two participants can hold almost the same data. A digest tree lets them compare small summaries, skip the parts that agree, and look closely at the parts that do not.</p>
 </div>
 
 <div class="digest-status">
-<strong>The foundation is implemented. Node integration is next.</strong>
-The crate, storage adapters and <code>TreeManager</code> are available.
-Nodes do not yet maintain these trees or compare them over the network.
-These examples exercise the foundation directly.
+<strong>Node-owned trees are implemented in this unreleased preview.</strong>
+These pages follow <a href="https://github.com/ankurah/ankurah/tree/d635ea5358396a2812526175f30471266ab7d8bb">checkpoint d635ea53</a>
+on <code>feat/node-digest-trees</code>, which is not merged into <code>main</code>
+or released on crates.io. Each Node owns a <code>TreeManager</code>, maintains
+query membership, and recovers deferred tree writes from canonical state.
+Requests carry a digest summary alongside the existing inventory; receivers
+still use that inventory for transfer decisions and completion.
 </div>
 
 ## A small difference in a large set
@@ -53,7 +56,7 @@ predicate or know what an Ankurah entity is.
 | Member ID | Album ID | Entity ID, through `EntityMemberId` |
 | Key values | Release year | Values of properties named by `KeySpec` |
 | Payload | Album title | The entity's head `Clock`, through `EntityHead` |
-| Membership | Albums the example inserts | Entities matching a resolved Selection |
+| Membership | Albums the example inserts | The resolved Selection's result, including its limit |
 
 Core uses the head to describe an entity's version; the tree does not hold a
 second copy of every entity property. The example uses a title so the reader
@@ -113,7 +116,9 @@ impl Member&lt;Property&gt; for Album {
 
 These are maintained code examples, transcluded with Liaison from the
 [executable example](https://github.com/ankurah/ankurah.org/tree/docs/0.10/example/digest-tree).
-They use the merged implementation while 0.10 is being prepared for release.
+They pin the preview checkpoint above. The generic examples teach the crate
+directly; [Node Lifecycle](node-lifecycle.md) exercises ordinary Node queries,
+limited-result refill and explicit flushing.
 
 ## Follow the pieces
 
@@ -122,8 +127,9 @@ They use the merged implementation while 0.10 is being prepared for release.
 <a href="comparison.html"><span>02</span><strong>Pages and Comparison</strong><small>Follow a request down to the differences.</small></a>
 <a href="storage.html"><span>03</span><strong>Storage and Transactions</strong><small>Keep a tree consistent with the records it describes.</small></a>
 <a href="management.html"><span>04</span><strong>Tree Management</strong><small>Understand ownership, retention and maintenance.</small></a>
+<a href="node-lifecycle.html"><span>05</span><strong>Node Lifecycle</strong><small>Follow a commit through maintenance, flush and recovery.</small></a>
 </div>
 
-The crate's [module documentation](https://github.com/ankurah/ankurah/blob/ec7a15625900fcec0403176f03713acaef1280df/digest-tree/src/lib.rs)
-and [introduction tests](https://github.com/ankurah/ankurah/blob/ec7a15625900fcec0403176f03713acaef1280df/digest-tree/tests/intro.rs)
+The crate's [module documentation](https://github.com/ankurah/ankurah/blob/d635ea5358396a2812526175f30471266ab7d8bb/digest-tree/src/lib.rs)
+and [introduction tests](https://github.com/ankurah/ankurah/blob/d635ea5358396a2812526175f30471266ab7d8bb/digest-tree/tests/intro.rs)
 provide the complete API context.

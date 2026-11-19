@@ -8,8 +8,9 @@ smaller spans or the members themselves.
 
 `DigestTreeView::differences` performs the comparison. A `PageGetter` supplies
 the other tree's answers. A getter can read another view in the same process,
-as this example does. A future network implementation can transport the same
-kind of requests; the crate does not implement that transport.
+as this example does. The Node preview sends a summary in `KnownState`, but
+receivers do not yet use digest comparison to choose network transfers.
+The crate itself does not implement that transport.
 
 <pre><code class="language-rust" transclude="example/digest-tree/src/lib.rs#compare-trees">pub async fn find_changes() -&gt; anyhow::Result&lt;()&gt; {
     let first = album(1, 2008, &quot;Walking on a Dream&quot;);
@@ -94,7 +95,7 @@ These are element sizes, not complete page or span-digest sizes. Counts,
 bounds and encoding metadata add to the representation. Persisted records
 identify the group; an encoding from one group cannot be read as the other.
 
-The [digest module documentation](https://github.com/ankurah/ankurah/blob/ec7a15625900fcec0403176f03713acaef1280df/digest-tree/src/digest/mod.rs)
+The [digest module documentation](https://github.com/ankurah/ankurah/blob/d635ea5358396a2812526175f30471266ab7d8bb/digest-tree/src/digest/mod.rs)
 states the construction and its assumptions. The
-[LtHash16 documentation](https://github.com/ankurah/ankurah/blob/ec7a15625900fcec0403176f03713acaef1280df/digest-tree/src/digest/lthash16.rs)
+[LtHash16 documentation](https://github.com/ankurah/ankurah/blob/d635ea5358396a2812526175f30471266ab7d8bb/digest-tree/src/digest/lthash16.rs)
 explains the limitations of that alternative.
