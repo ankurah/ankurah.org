@@ -8,7 +8,7 @@
 
 <div class="digest-status">
 <strong>Digest-based query synchronization and durable replication are implemented in this unreleased preview.</strong>
-These pages follow <a href="https://github.com/ankurah/ankurah/tree/5d223bdf5f65542a2aa966e951dab47101a46521">checkpoint 5d223bdf</a>
+These pages follow <a href="https://github.com/ankurah/ankurah/tree/6fe7640d1192bcf636fe27e9a26b57f72920644b">checkpoint 6fe7640d</a>
 on <code>feat/durable-selection-replication</code>, which is not merged into <code>main</code>
 or released on crates.io. Each Node owns a <code>TreeManager</code>, maintains
 query membership, and recovers deferred tree writes from canonical state.
@@ -138,6 +138,6 @@ retains accepted history after a Selection exit, and reopens a receiver.
 <a href="durable-replication.html"><span>07</span><strong>Durable Replication</strong><small>Choose each direction and retain the events behind accepted state.</small></a>
 </div>
 
-The crate's [module documentation](https://github.com/ankurah/ankurah/blob/5d223bdf5f65542a2aa966e951dab47101a46521/digest-tree/src/lib.rs)
-and [introduction tests](https://github.com/ankurah/ankurah/blob/5d223bdf5f65542a2aa966e951dab47101a46521/digest-tree/tests/intro.rs)
+The crate's [module documentation](https://github.com/ankurah/ankurah/blob/6fe7640d1192bcf636fe27e9a26b57f72920644b/digest-tree/src/lib.rs)
+and [introduction tests](https://github.com/ankurah/ankurah/blob/6fe7640d1192bcf636fe27e9a26b57f72920644b/digest-tree/tests/intro.rs)
 provide the complete API context.

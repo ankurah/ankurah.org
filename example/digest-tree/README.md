@@ -1,6 +1,6 @@
 # Digest-tree documentation examples
 
-This independent crate pins `5d223bdf5f65542a2aa966e951dab47101a46521` on
+This independent crate pins `6fe7640d1192bcf636fe27e9a26b57f72920644b` on
 `feat/durable-selection-replication`. This is an implemented but unmerged and unreleased
 0.10 preview, not the API currently available on `main` or crates.io.
 `src/lib.rs` contains the generic examples transcluded into the book with Liaison.

@@ -10,7 +10,7 @@ remain based on 0.9 unless marked otherwise. This branch does not change the pub
 
 The [Digest Trees](src/digest-tree/index.md) section covers the foundation,
 Node-owned maintenance, query synchronization and durable replication on `feat/durable-selection-replication` at
-`5d223bdf5f65542a2aa966e951dab47101a46521`. That checkpoint is an unmerged,
+`6fe7640d1192bcf636fe27e9a26b57f72920644b`. That checkpoint is an unmerged,
 unreleased preview, not the API on `main` or crates.io. Fetch and live-query
 initialization/reconnect compare captured digests and repair differences
 through the existing peer update channel. Durable replication independently
