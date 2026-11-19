@@ -33,13 +33,14 @@ their IDs. The example's `selection` helper resolves a predicate for `Record`
 and includes its model membership.
 
 <pre><code class="language-rust" transclude="example/digest-tree/examples/durable_replication.rs#durable-directions">let published = selection(&amp;right, &quot;published = true&quot;).await?;
-let left_to_right = right.replicate_from(left.id, published.clone(), DEFAULT_CONTEXT)?;
+let left_to_right =
+    right.replicate_from(left.wait_id().await?, published.clone(), DEFAULT_CONTEXT)?;
 let captured = left_to_right.wait_caught_up().await?;
 assert_eq!(captured.digest.count(), 1);
 
 // The reverse direction is optional and can select different entities.
 let favorites = selection(&amp;left, &quot;favorite = true&quot;).await?;
-let right_to_left = left.replicate_from(right.id, favorites, DEFAULT_CONTEXT)?;
+let right_to_left = left.replicate_from(right.wait_id().await?, favorites, DEFAULT_CONTEXT)?;
 right_to_left.wait_caught_up().await?;</code></pre>
 
 Cloning a `Replication` handle shares its interest. Dropping the last clone
@@ -123,7 +124,7 @@ credentials after constructing the new Node.
 );
 reopened.wait_ready().await?;
 let _connection = LocalProcessConnection::new(&amp;left, &amp;reopened).await?;
-let resumed = reopened.replicate_from(left.id, published, DEFAULT_CONTEXT)?;
+let resumed = reopened.replicate_from(left.wait_id().await?, published, DEFAULT_CONTEXT)?;
 resumed.wait_caught_up().await?;</code></pre>
 
 The new handle proves a fresh source capture. A saved application status or
@@ -168,10 +169,14 @@ uses separate temporary SQLite files. It checks asymmetric interests,
 complete event ancestry, an offline Selection exit, retained history and
 reopening the receiver. The snippets above are transcluded with Liaison.
 
-The current preview still requires peers to share the existing System root.
-The example provisions only that root and catalog definitions, with their
-events, before constructing the receiver. Application data is created later
-and arrives exclusively through replication. This is controlled example
-setup, not a joining API. Narrow interests need their required catalog
-definitions provisioned or included in additional replication interests;
-a full authorized `TRUE` Selection includes catalog data as well.
+The example initializes each Node independently, then imports the same catalog
+declaration events into the receiver. Matching model or property labels alone
+do not unify independently created declarations. No System root or joining
+operation is required. Application data is created later and arrives exclusively
+through replication. Narrow interests need their required catalog definitions
+shared or included in additional replication interests; a full authorized
+`TRUE` Selection includes catalog data as well.
+
+The default constructors [persist the Node's key](../guides/node-lifecycle.md),
+so reopening the same store preserves its peer identity. Reset is different:
+it removes that stored key and permanently halts the old Node.

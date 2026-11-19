@@ -133,7 +133,7 @@ These are element sizes, not complete page or span-digest sizes. Counts,
 bounds and encoding metadata add to the representation. Persisted records
 identify the group; an encoding from one group cannot be read as the other.
 
-The [digest module documentation](https://github.com/ankurah/ankurah/blob/6fe7640d1192bcf636fe27e9a26b57f72920644b/digest-tree/src/digest/mod.rs)
+The [digest module documentation](https://github.com/ankurah/ankurah/blob/d2a2690786072dd208d197f975ad69de3bcab759/digest-tree/src/digest/mod.rs)
 states the construction and its assumptions. The
-[LtHash16 documentation](https://github.com/ankurah/ankurah/blob/6fe7640d1192bcf636fe27e9a26b57f72920644b/digest-tree/src/digest/lthash16.rs)
+[LtHash16 documentation](https://github.com/ankurah/ankurah/blob/d2a2690786072dd208d197f975ad69de3bcab759/digest-tree/src/digest/lthash16.rs)
 explains the limitations of that alternative.

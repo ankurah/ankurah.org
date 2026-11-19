@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Build and test script for ankurah.org example
-# This compiles the transclusion sources and executes their runtime checks.
+# This compiles the application workspace transclusions and executes their runtime checks.
+# The separate 0.10 preview is checked by ../scripts/check-preview.sh.
 
 set -e
 
@@ -68,5 +69,5 @@ cd ..
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}✓ All builds successful!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "\nAll transcluded code sources are compiled, and their runtime checks pass."
+echo -e "\nThe application workspace's transclusion sources compiled and its runtime checks passed."
 echo -e "Run ${BLUE}./dev.sh${NC} to start the development environment.\n"

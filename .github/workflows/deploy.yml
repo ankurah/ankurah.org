@@ -2,9 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, docs/0.10]
   pull_request:
-    branches: [main]
+    branches: [main, docs/0.10]
   workflow_dispatch:
 
 permissions:
@@ -40,6 +40,14 @@ jobs:
       - name: Build and test example
         run: cd example && ./build-test.sh
 
+      - name: Setup Node for figure tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate 0.10 preview examples and figures
+        run: ./scripts/check-preview.sh
+
       - name: Install liaison
         run: |
           curl -L -o /tmp/liaison https://github.com/dnorman/liaison/releases/download/v0.2.0/liaison
@@ -48,7 +56,7 @@ jobs:
           sudo mv /tmp/liaison /usr/local/bin/liaison
 
       - name: Verify code examples are up to date
-        run: find "$PWD/src" -type f -name '*.md' -print0 | xargs -0 liaison --check "$PWD/index.html"
+        run: find "$PWD/src" -type f \( -name '*.md' -o -name '*.html' \) -print0 | xargs -0 liaison --check "$PWD/index.html"
 
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v2

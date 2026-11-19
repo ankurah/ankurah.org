@@ -2,9 +2,10 @@
 
 This guided trace connects the pieces you receive from an Ankurah template:
 a shared Rust model, a durable server node, an ephemeral client node, a live
-query, and a reactive component. The snippets are transcluded from this site's
-Ankurah 0.9 example workspace so the Rust, WASM, and React builds validate the
-same code shown here.
+query, and a reactive component. The Node startup snippets follow the
+[0.10 preview](../guides/node-lifecycle.md), with separate native and WASM compile
+checks. The remaining model, query and React snippets are transcluded from this
+site's 0.9 application workspace; their full 0.10 migration is still pending.
 
 This is an end-to-end tour of the site's `Album` validation workspace, not a
 literal patch against the templates' `Message` model. For a runnable generated
@@ -38,24 +39,19 @@ resolves concurrent changes.
 
 The server owns a durable node and exposes it through the WebSocket connector:
 
-<pre><code transclude="example/server/src/main.rs#server-example">let storage = SledStorageEngine::with_path(storage_dir)?;
+<pre><code class="language-rust" transclude="example/startup/src/lib.rs#server-startup">let storage = SledStorageEngine::with_path(storage_dir)?;
 let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
-node.system.wait_loaded().await;
-if node.system.root().is_none() {
-    node.system.create().await?;
-}
+node.wait_ready().await?;
 
 let mut server = WebsocketServer::new(node);
-println!(&quot;Running server...&quot;);
 server.run(&quot;127.0.0.1:9797&quot;).await?;</code></pre>
 
-`wait_loaded()` is the readiness barrier for checking the local system catalog
-before the code reads its root. The root is created only when the store has none, so
-restarting the process reopens the same system instead of trying to create a
-second one. `PermissiveAgent` is appropriate for local development only; use
+`wait_ready()` waits for the persisted key, catalog and policy. A fresh store
+initializes without a separate System creation step; reopening retains its
+identity. `PermissiveAgent` is appropriate for local development only; use
 [Authentication & Policy](../guides/auth.md) before exposing a server to
-untrusted clients. For the current readiness-wait edge case, see
-[Deployment & Operations](../guides/deployment.md#the-durable-server).
+untrusted clients. See [Node Identity and Reset](../guides/node-lifecycle.md)
+for the distinction between reopening and discarding a Node's storage.
 
 ## 3. Create data in a transaction
 
@@ -100,20 +96,16 @@ safe value substitution.
 The browser uses IndexedDB for its local working set and connects to a durable
 peer over WebSockets:
 
-<pre><code transclude="example/wasm-bindings/src/lib.rs#client-example">let storage = IndexedDBStorageEngine::open(&quot;myapp&quot;).await?;
+<pre><code class="language-rust" transclude="example/startup/src/lib.rs#browser-startup">let storage = IndexedDBStorageEngine::open(&quot;myapp&quot;).await?;
 let node = Node::new(Arc::new(storage), PermissiveAgent::new());
 let client = WebsocketClient::new(node.clone(), server_url)?;
-node.system.wait_system_ready().await;
+node.wait_ready().await?;
+let context = node.context(DEFAULT_CONTEXT)?;</code></pre>
 
-let context = node.context(DEFAULT_CONTEXT)?;
-
-CONTEXT.with(|slot| slot.replace(Some(context)));
-CLIENT.with(|slot| slot.replace(Some(client)));</code></pre>
-
-`wait_system_ready()` is the corresponding client-side readiness barrier for
-learning which system it joined.
-Keep the returned connector handle alive for as long as the node should remain
-connected.
+Connect before awaiting readiness: the ephemeral Node may need its durable
+peer to supply catalog declarations. Retain both `context` and `client` in the
+application's initialization state. Keep the connector handle alive for as long
+as the Node should remain connected.
 
 Client initialization is asynchronous. Do not call `ctx()` or create queries
 during the first React render; wait for `initialize_client()` to resolve, then

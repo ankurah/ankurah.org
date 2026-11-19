@@ -48,7 +48,7 @@ The two transaction types have different capabilities:
 | `RemoteTrxEntity` | `New`: identity comes from the received genesis | `Mut`: retains and forks the resident entity | Existing events and state snapshots |
 
 Their private `TrxEntityData` holds the common machinery: working state,
-retained events, the transaction's alive flag, system epoch, and coordination
+retained events, the transaction's alive flag, node epoch, and coordination
 with its readable proxy. Each transaction entity owns its own data; sharing the
 implementation does not share working state between transactions.
 
@@ -104,10 +104,6 @@ ID demand become a later update event.
 Editing a committed entity forks its [backends](property-backends.md#the-propertybackend-trait),
 memberships, and head into a `LocalTrxEntity` retaining the resident entity. New creations have no
 upstream entity to fork.
-
-System roots use the same preparation and publication machinery without a
-user transaction. They are registered only after their genesis and state persist.
-
 
 ## Local Transaction Commit
 

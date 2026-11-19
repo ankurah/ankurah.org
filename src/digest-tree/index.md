@@ -8,15 +8,18 @@
 
 <div class="digest-status">
 <strong>Digest-based query synchronization and durable replication are implemented in this unreleased preview.</strong>
-These pages follow <a href="https://github.com/ankurah/ankurah/tree/6fe7640d1192bcf636fe27e9a26b57f72920644b">checkpoint 6fe7640d</a>
-on <code>feat/durable-selection-replication</code>, which is not merged into <code>main</code>
+These pages follow <a href="https://github.com/ankurah/ankurah/tree/d2a2690786072dd208d197f975ad69de3bcab759">checkpoint d2a26907</a>
+on <code>feat/remove-system-after-node-keys</code>, which is not merged into <code>main</code>
 or released on crates.io. Each Node owns a <code>TreeManager</code>, maintains
 query membership, and recovers deferred tree writes from canonical state.
 Fetch and live-query initialization/reconnect use digest comparison and
 bounded repair instead of a full inventory of known entity heads. Standing
 live updates remain the Reactor's responsibility. Durable Nodes can separately
 replicate directional Selections with complete event histories, within explicit
-comparison and history limits.
+comparison and history limits. Nodes persist their key-backed identities, and
+<code>reset()</code> permanently halts a Node before clearing its storage. See
+<a href="../guides/node-lifecycle.html">Node Identity and Reset</a> for startup,
+readiness and the distinction between reopening and resetting.
 </div>
 
 ## A small difference in a large set
@@ -120,7 +123,7 @@ impl Member&lt;Property&gt; for Album {
 These are maintained code examples, transcluded with Liaison from the
 [executable example](https://github.com/ankurah/ankurah.org/tree/docs/0.10/example/digest-tree).
 They pin the preview checkpoint above. The generic examples teach the crate
-directly; [Node Lifecycle](node-lifecycle.md) exercises ordinary Node queries,
+directly; [Node-Owned Tree Maintenance](node-lifecycle.md) exercises ordinary Node queries,
 limited-result refill and explicit flushing. [Query Synchronization](query-sync.md)
 connects two Nodes and exercises fetch, reconnect and standing updates.
 [Durable Replication](durable-replication.md) configures independent directions,
@@ -133,11 +136,11 @@ retains accepted history after a Selection exit, and reopens a receiver.
 <a href="comparison.html"><span>02</span><strong>Pages and Comparison</strong><small>Follow a request down to the differences.</small></a>
 <a href="storage.html"><span>03</span><strong>Storage and Transactions</strong><small>Keep a tree consistent with the records it describes.</small></a>
 <a href="management.html"><span>04</span><strong>Tree Management</strong><small>Understand ownership, retention and maintenance.</small></a>
-<a href="node-lifecycle.html"><span>05</span><strong>Node Lifecycle</strong><small>Follow a commit through maintenance, flush and recovery.</small></a>
+<a href="node-lifecycle.html"><span>05</span><strong>Tree Maintenance</strong><small>Follow a commit through maintenance, flush and recovery.</small></a>
 <a href="query-sync.html"><span>06</span><strong>Query Synchronization</strong><small>Compare captured results, repair differences and resume live updates.</small></a>
 <a href="durable-replication.html"><span>07</span><strong>Durable Replication</strong><small>Choose each direction and retain the events behind accepted state.</small></a>
 </div>
 
-The crate's [module documentation](https://github.com/ankurah/ankurah/blob/6fe7640d1192bcf636fe27e9a26b57f72920644b/digest-tree/src/lib.rs)
-and [introduction tests](https://github.com/ankurah/ankurah/blob/6fe7640d1192bcf636fe27e9a26b57f72920644b/digest-tree/tests/intro.rs)
+The crate's [module documentation](https://github.com/ankurah/ankurah/blob/d2a2690786072dd208d197f975ad69de3bcab759/digest-tree/src/lib.rs)
+and [introduction tests](https://github.com/ankurah/ankurah/blob/d2a2690786072dd208d197f975ad69de3bcab759/digest-tree/tests/intro.rs)
 provide the complete API context.

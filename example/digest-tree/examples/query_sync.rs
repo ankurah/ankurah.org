@@ -33,7 +33,6 @@ async fn run() -> anyhow::Result<()> {
         Arc::new(SqliteStorageEngine::open(directory.path().join("server.sqlite")).await?),
         PermissiveAgent::new(),
     );
-    server.system.create().await?;
     server.wait_ready().await?;
     let client = Node::new(
         Arc::new(SqliteStorageEngine::open(directory.path().join("client.sqlite")).await?),

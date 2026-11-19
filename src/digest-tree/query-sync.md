@@ -72,7 +72,6 @@ database, but does not promise durable service to other Nodes:
     Arc::new(SqliteStorageEngine::open(directory.path().join(&quot;server.sqlite&quot;)).await?),
     PermissiveAgent::new(),
 );
-server.system.create().await?;
 server.wait_ready().await?;
 let client = Node::new(
     Arc::new(SqliteStorageEngine::open(directory.path().join(&quot;client.sqlite&quot;)).await?),

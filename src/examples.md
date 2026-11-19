@@ -1,5 +1,9 @@
 # Examples
 
+Node startup below follows the [0.10 preview](guides/node-lifecycle.md), with
+native and WASM compile checks. The remaining application examples still use
+the site's 0.9 workspace; their model and query APIs await migration.
+
 This page contains practical code examples demonstrating key Ankurah features.
 
 ## Defining a Model
@@ -20,29 +24,20 @@ See [Defining Models](models.md) for full documentation.
 
 ## Server Setup
 
-<pre><code transclude="example/server/src/main.rs#server-example">let storage = SledStorageEngine::with_path(storage_dir)?;
+<pre><code class="language-rust" transclude="example/startup/src/lib.rs#server-startup">let storage = SledStorageEngine::with_path(storage_dir)?;
 let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
-node.system.wait_loaded().await;
-if node.system.root().is_none() {
-    node.system.create().await?;
-}
+node.wait_ready().await?;
 
 let mut server = WebsocketServer::new(node);
-println!(&quot;Running server...&quot;);
 server.run(&quot;127.0.0.1:9797&quot;).await?;</code></pre>
 
 ## Rust Client
 
-<pre><code transclude="example/server/src/main.rs#rust-client-example">let storage = SledStorageEngine::new_test()?;
+<pre><code class="language-rust" transclude="example/startup/src/lib.rs#native-client-startup">let storage = SledStorageEngine::with_path(storage_dir)?;
 let node = Node::new(Arc::new(storage), PermissiveAgent::new());
-let _client = WebsocketClient::new(node.clone(), &quot;ws://localhost:9797&quot;).await?;
-node.system.wait_system_ready().await;
-
-// Create album
-let ctx = node.context(ankurah::policy::DEFAULT_CONTEXT)?;
-let trx = ctx.begin();
-trx.create(&amp;Album { name: &quot;Parade&quot;.into(), artist: &quot;Prince&quot;.into(), year: 1986 }).await?;
-trx.commit().await?;</code></pre>
+let client = WebsocketClient::new(node.clone(), server_url).await?;
+node.wait_ready().await?;
+let context = node.context(DEFAULT_CONTEXT)?;</code></pre>
 
 ## React Component
 

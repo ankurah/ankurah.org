@@ -32,7 +32,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "ankql"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=6fe7640d1192bcf636fe27e9a26b57f72920644b#6fe7640d1192bcf636fe27e9a26b57f72920644b"
+source = "git+https://github.com/ankurah/ankurah?rev=d2a2690786072dd208d197f975ad69de3bcab759#d2a2690786072dd208d197f975ad69de3bcab759"
 dependencies = [
  "ankurah-core-types",
  "pest",
@@ -45,7 +45,7 @@ dependencies = [
 [[package]]
 name = "ankurah"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=6fe7640d1192bcf636fe27e9a26b57f72920644b#6fe7640d1192bcf636fe27e9a26b57f72920644b"
+source = "git+https://github.com/ankurah/ankurah?rev=d2a2690786072dd208d197f975ad69de3bcab759#d2a2690786072dd208d197f975ad69de3bcab759"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -60,7 +60,7 @@ dependencies = [
 [[package]]
 name = "ankurah-connector-local-process"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=6fe7640d1192bcf636fe27e9a26b57f72920644b#6fe7640d1192bcf636fe27e9a26b57f72920644b"
+source = "git+https://github.com/ankurah/ankurah?rev=d2a2690786072dd208d197f975ad69de3bcab759#d2a2690786072dd208d197f975ad69de3bcab759"
 dependencies = [
  "ankurah-core",
  "ankurah-proto",
@@ -73,7 +73,7 @@ dependencies = [
 [[package]]
 name = "ankurah-core"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=6fe7640d1192bcf636fe27e9a26b57f72920644b#6fe7640d1192bcf636fe27e9a26b57f72920644b"
+source = "git+https://github.com/ankurah/ankurah?rev=d2a2690786072dd208d197f975ad69de3bcab759#d2a2690786072dd208d197f975ad69de3bcab759"
 dependencies = [
  "ankql",
  "ankurah-core-types",
@@ -87,6 +87,7 @@ dependencies = [
  "base64",
  "bincode",
  "chrono",
+ "ed25519-dalek",
  "futures",
  "futures-signals",
  "futures-timer",
@@ -110,7 +111,7 @@ dependencies = [
 [[package]]
 name = "ankurah-core-types"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=6fe7640d1192bcf636fe27e9a26b57f72920644b#6fe7640d1192bcf636fe27e9a26b57f72920644b"
+source = "git+https://github.com/ankurah/ankurah?rev=d2a2690786072dd208d197f975ad69de3bcab759#d2a2690786072dd208d197f975ad69de3bcab759"
 dependencies = [
  "anyhow",
  "base64",
@@ -125,7 +126,7 @@ dependencies = [
 [[package]]
 name = "ankurah-derive"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=6fe7640d1192bcf636fe27e9a26b57f72920644b#6fe7640d1192bcf636fe27e9a26b57f72920644b"
+source = "git+https://github.com/ankurah/ankurah?rev=d2a2690786072dd208d197f975ad69de3bcab759#d2a2690786072dd208d197f975ad69de3bcab759"
 dependencies = [
  "ankql",
  "ankurah-core-types",
@@ -142,7 +143,7 @@ dependencies = [
 [[package]]
 name = "ankurah-digest-tree"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=6fe7640d1192bcf636fe27e9a26b57f72920644b#6fe7640d1192bcf636fe27e9a26b57f72920644b"
+source = "git+https://github.com/ankurah/ankurah?rev=d2a2690786072dd208d197f975ad69de3bcab759#d2a2690786072dd208d197f975ad69de3bcab759"
 dependencies = [
  "ankurah-core-types",
  "blake3",
@@ -158,7 +159,7 @@ dependencies = [
 [[package]]
 name = "ankurah-proto"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=6fe7640d1192bcf636fe27e9a26b57f72920644b#6fe7640d1192bcf636fe27e9a26b57f72920644b"
+source = "git+https://github.com/ankurah/ankurah?rev=d2a2690786072dd208d197f975ad69de3bcab759#d2a2690786072dd208d197f975ad69de3bcab759"
 dependencies = [
  "ankql",
  "ankurah-core-types",
@@ -168,6 +169,7 @@ dependencies = [
  "bincode",
  "bytes",
  "chrono",
+ "ed25519-dalek",
  "getrandom 0.3.4",
  "rand 0.9.5",
  "serde",
@@ -181,7 +183,7 @@ dependencies = [
 [[package]]
 name = "ankurah-signals"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=6fe7640d1192bcf636fe27e9a26b57f72920644b#6fe7640d1192bcf636fe27e9a26b57f72920644b"
+source = "git+https://github.com/ankurah/ankurah?rev=d2a2690786072dd208d197f975ad69de3bcab759#d2a2690786072dd208d197f975ad69de3bcab759"
 dependencies = [
  "reactive_graph",
  "tokio",
@@ -191,7 +193,7 @@ dependencies = [
 [[package]]
 name = "ankurah-storage-common"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=6fe7640d1192bcf636fe27e9a26b57f72920644b#6fe7640d1192bcf636fe27e9a26b57f72920644b"
+source = "git+https://github.com/ankurah/ankurah?rev=d2a2690786072dd208d197f975ad69de3bcab759#d2a2690786072dd208d197f975ad69de3bcab759"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -208,7 +210,7 @@ dependencies = [
 [[package]]
 name = "ankurah-storage-sqlite"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=6fe7640d1192bcf636fe27e9a26b57f72920644b#6fe7640d1192bcf636fe27e9a26b57f72920644b"
+source = "git+https://github.com/ankurah/ankurah?rev=d2a2690786072dd208d197f975ad69de3bcab759#d2a2690786072dd208d197f975ad69de3bcab759"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -223,6 +225,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.21",
  "tokio",
  "tracing",
@@ -307,6 +310,12 @@ name = "base64"
 version = "0.22.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+
+[[package]]
+name = "base64ct"
+version = "1.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
 name = "bb8"
@@ -402,6 +411,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "const-oid"
+version = "0.9.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
+
+[[package]]
 name = "constant_time_eq"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -469,9 +484,11 @@ dependencies = [
  "cfg-if",
  "cpufeatures 0.2.17",
  "curve25519-dalek-derive",
+ "digest",
  "fiat-crypto",
  "rustc_version",
  "subtle",
+ "zeroize",
 ]
 
 [[package]]
@@ -497,6 +514,16 @@ dependencies = [
  "lock_api",
  "once_cell",
  "parking_lot_core",
+]
+
+[[package]]
+name = "der"
+version = "0.7.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7c1832837b905bbfb5101e07cc24c8deddf52f93225eee6ead5f4d63d53ddcb"
+dependencies = [
+ "const-oid",
+ "zeroize",
 ]
 
 [[package]]
@@ -531,6 +558,30 @@ name = "discard"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "212d0f5754cb6769937f4501cc0e67f4f4483c8d2c3e1e922ee9edbe4ab4c7c0"
+
+[[package]]
+name = "ed25519"
+version = "2.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "115531babc129696a58c64a4fef0a8bf9e9698629fb97e9e40767d235cfbcd53"
+dependencies = [
+ "pkcs8",
+ "signature",
+]
+
+[[package]]
+name = "ed25519-dalek"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70e796c081cee67dc755e1a36a0a172b897fab85fc3f6bc48307991f64e4eca9"
+dependencies = [
+ "curve25519-dalek",
+ "ed25519",
+ "serde",
+ "sha2",
+ "subtle",
+ "zeroize",
+]
 
 [[package]]
 name = "either"
@@ -1077,6 +1128,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
+name = "pkcs8"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f950b2377845cebe5cf8b5165cb3cc1a5e0fa5cfa3e1f7f55707d8fd82e0a7b7"
+dependencies = [
+ "der",
+ "spki",
+]
+
+[[package]]
 name = "pkg-config"
 version = "0.3.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1440,6 +1501,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "signature"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
+dependencies = [
+ "rand_core 0.6.4",
+]
+
+[[package]]
 name = "slab"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1477,6 +1547,16 @@ checksum = "c3d1e2c7f27f8d4cb10542a02c49005dbd6e93095799d6f3be745fae9f8fedd4"
 dependencies = [
  "libc",
  "windows-sys",
+]
+
+[[package]]
+name = "spki"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d91ed6c858b01f942cd56b37a94b3e0a1798290327d1236e4d9cf4eaca44d29d"
+dependencies = [
+ "base64ct",
+ "der",
 ]
 
 [[package]]
@@ -1842,6 +1922,12 @@ dependencies = [
  "quote",
  "syn 2.0.119",
 ]
+
+[[package]]
+name = "zeroize"
+version = "1.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85ccff8a4805aba1eaa4cd4afcd49f7557dd2cf5fd79ffc37f8959466effc5aa"
 
 [[package]]
 name = "zmij"

@@ -5,10 +5,16 @@ request contexts and supplies access-control hooks for local operations and
 peer requests. Each context carries the agent's notion of an identity.
 
 The examples elsewhere in this book use `PermissiveAgent::new()` -- the
-development baseline that performs **no authentication and no
+development baseline that performs **no application authentication and no
 authorization**: every gate is a no-op allow. Ship something real and you
 will want the JWT extension below, or your own `PolicyAgent`
 implementation.
+
+In the [0.10 preview](node-lifecycle.md#possession-is-not-permission), connection
+setup separately proves possession of a Node key. That proof identifies the
+Node, not the user or their permissions. The policy hook table and JWT
+extension below still target the published 0.9 API; their 0.10 migration is
+pending. The Node startup shown here uses 0.10 readiness.
 
 ## What a policy agent decides
 
@@ -49,10 +55,7 @@ let keys = SigningKeys::from_pem(include_str!("path/to/private_key.pem"))?;
 let agent = JwtAgent::new_durable(keys.clone(), "policy.json")?;
 
 let node = Node::new_durable(Arc::new(storage), agent);
-node.system.wait_loaded().await;
-if node.system.root().is_none() {
-    node.system.create().await?;
-}
+node.wait_ready().await?;
 ```
 
 **Authenticated context** -- verify the token before turning its claims into

@@ -16,6 +16,7 @@
 - [Query Syntax (AnkQL)](queries/syntax.md)
 - [Reactivity & Signals](reactivity/index.md)
 - [React Bindings](reactivity/react.md)
+- [Node Identity and Reset (0.10 preview)](guides/node-lifecycle.md)
 - [Authentication & Policy](guides/auth.md)
 - [Deployment & Operations](guides/deployment.md)
 
@@ -46,7 +47,7 @@
   - [Pages and Comparison](digest-tree/comparison.md)
   - [Storage and Transactions](digest-tree/storage.md)
   - [Tree Management](digest-tree/management.md)
-  - [Node Lifecycle](digest-tree/node-lifecycle.md)
+  - [Node-Owned Tree Maintenance](digest-tree/node-lifecycle.md)
   - [Query Synchronization](digest-tree/query-sync.md)
   - [Durable Replication](digest-tree/durable-replication.md)
 - [Node Architecture and Replication](internals/node-architecture.md)

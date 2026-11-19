@@ -26,7 +26,6 @@ async fn main() -> anyhow::Result<()> {
         // liaison id=node-tree-setup
         let storage = SqliteStorageEngine::open(&database).await?;
         let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
-        node.system.create().await?;
         node.wait_ready().await?;
         node.set_tree_write_behind(WriteBehind {
             max_changes: 1024,

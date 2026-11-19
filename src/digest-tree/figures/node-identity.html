@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Identity across reopen and reset · Ankurah</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .identity-ledger { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .identity-ledger .version { font-size: clamp(19px, 3vw, 25px); }
+      .identity-ledger p { margin-bottom: 0; }
+      .identity-ledger .inactive { background: var(--soft); }
+      #outcome { min-width: 230px; }
+      @media (max-width: 650px) {
+        .identity-ledger { grid-template-columns: 1fr; }
+        .identity-ledger .version { margin: 8px 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Node identity · illustrative sequence</p>
+      <h1>A key can outlive a Node.</h1>
+      <p class="intro">
+        A key identifies a Node to peers. An epoch belongs to one local Node
+        incarnation. Follow a normal reopen, then compare it with an explicit reset.
+      </p>
+      <div class="controls">
+        <label>What happens next?
+          <select id="outcome">
+            <option value="reopen">Reopen the same storage</option>
+            <option value="reset">Reset, then construct a successor</option>
+          </select>
+        </label>
+      </div>
+      <div class="scene">
+        <div class="ledger identity-ledger">
+          <section class="ledger-card">
+            <h2>Persisted storage</h2>
+            <div id="stored" class="version">Key K₁</div>
+            <p id="data">Entity state and history retained.</p>
+          </section>
+          <section class="ledger-card" id="original-card">
+            <h2>Original Node · E₁</h2>
+            <div id="original" class="version">Running</div>
+            <p id="original-detail">Presents K₁ to peers.</p>
+          </section>
+          <section class="ledger-card inactive" id="successor-card">
+            <h2>Successor Node · E₂</h2>
+            <div id="successor" class="version">Not constructed</div>
+            <p id="successor-detail">No successor exists yet.</p>
+          </section>
+        </div>
+      </div>
+      <div class="playback" role="group" aria-label="Identity playback"
+        transclude="fragments.html#playback-controls">
+
+          <button id="play" class="primary" aria-pressed="false">Play</button>
+          <button id="previous" aria-label="Previous step">←</button>
+          <button id="next" aria-label="Next step">→</button>
+          <input
+            id="progress"
+            type="range"
+            min="0"
+            max="4"
+            value="0"
+            aria-label="Explanation step"
+          />
+          <span id="step" class="step-label">0 / 4</span>
+        </div>
+      <div id="caption" class="caption" aria-live="polite" aria-atomic="true"></div>
+      <p class="note">
+        This sequence uses the default constructor and assumes successful storage
+        operations. K₁/K₂ and E₁/E₂ are labels, not API counters. The application
+        owns all access to this storage; it must quiesce any other owners before
+        resetting. Playback is conceptual, not a recorded execution or timer.
+      </p>
+      <details class="response">
+        <summary>Read the distinction without playback</summary>
+        <p>
+          Reopening retains the stored key, entity state and event history. The
+          newly constructed Node loads that key and uses a fresh local epoch.
+          Its Contexts and queries are new objects.
+        </p>
+        <p>
+          Reset first halts the original Node, closes admission and drains its
+          work. It then empties storage. The original Node remains halted even
+          after success. Constructing a successor creates a new epoch and, with
+          no stored key left, a new key. If the application supplies its own key,
+          reset cannot erase that external copy: reusing it preserves the NodeId.
+        </p>
+      </details>
+    </main>
+    <script type="module" src="node-identity.mjs"></script>
+  </body>
+</html>

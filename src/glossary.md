@@ -65,6 +65,25 @@ A participant in the Ankurah network. Nodes can be servers, clients, or peers. E
 - Connection handlers
 - A reactor for subscriptions
 
+### NodeId (0.10)
+
+The public Ed25519 key identifying a Node to peers. The default constructors
+persist its keypair in the storage engine, so reopening preserves identity.
+Possession of the private key is proved during connection setup; authorization
+remains the policy agent's responsibility. See [Node Identity and Reset](guides/node-lifecycle.md).
+
+### NodeEpoch (0.10)
+
+A process-local identity for one constructed Node's entities and catalog
+bindings. Every new Node gets a fresh epoch, including one reopening the same
+stored key. It prevents objects belonging to an old incarnation from being
+used with a successor. It is not a network identity or storage cursor.
+
+### ConnectionId (0.10)
+
+A local identifier for one peer connection. Several connections may present the
+same NodeId; connection-scoped work is released when its own connection ends.
+
 ### Storage Engine
 
 A means of storing and retrieving state and events. The current repository ships four implementations:

@@ -3,25 +3,19 @@
 A basic Ankurah deployment is small: one durable server process holding the
 system of record, any number of ephemeral clients (browsers, native apps)
 connecting over WebSockets, and a storage engine under the server. This
-page covers standing that up for real -- storage choices, the one-time
-system bootstrap, ports and TLS, upgrades, and backups.
+page covers storage choices, Node startup, ports and TLS, upgrades, and backups.
 
 ## The durable server
 
-The minimal durable-server shape, from the example workspace:
+The startup code below follows the [0.10 preview](node-lifecycle.md) and is
+compiled in the [startup example](https://github.com/ankurah/ankurah.org/tree/docs/0.10/example/startup):
 
-```rust,ignore
-let storage_dir = dirs::home_dir().unwrap().join(".ankurah");
-let storage = SledStorageEngine::with_path(storage_dir)?;
+<pre><code class="language-rust" transclude="example/startup/src/lib.rs#server-startup">let storage = SledStorageEngine::with_path(storage_dir)?;
 let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
-node.system.wait_loaded().await;
-if node.system.root().is_none() {
-    node.system.create().await?;
-}
+node.wait_ready().await?;
 
 let mut server = WebsocketServer::new(node);
-server.run("0.0.0.0:9797").await?;
-```
+server.run(&quot;127.0.0.1:9797&quot;).await?;</code></pre>
 
 Three decisions are hiding in those lines:
 
@@ -30,23 +24,14 @@ it keeps full event history and answers other nodes' fetches. Clients use
 `Node::new` (ephemeral) -- they hold a synchronized working set and lean on
 durable peers for history.
 
-**The system bootstrap.** `wait_loaded()` first lets the durable node inspect
-its store. `node.system.create()` is called only when that store has no system
-root; it initializes a brand-new system and errors if a root already exists.
-Every restart reuses the stored root. Ephemeral clients call
-`node.system.wait_system_ready().await` after connecting to wait until they have
-joined the server's system; `SystemManager::create()` separately rejects
-non-durable nodes. A mismatched root identifies a different system, so do not
-replace or recreate it for stores you mean to keep.
+**Readiness and identity.** `wait_ready()` waits for the keypair, catalog and
+policy to initialize. Fresh storage needs no System bootstrap. Reopening
+loads the same keypair, preserving the NodeId. There is no runtime System-root
+membership gate; authorization remains a policy decision. See
+[Node Identity and Reset](node-lifecycle.md) before clearing storage or
+constructing a successor after reset.
 
-Current 0.9 caveat: these readiness methods use a check followed by a
-notification wait, which has a rare lost-wakeup window; a catalog-load error is
-logged but does not release `wait_loaded()`. In a supervised deployment, put an
-external bound on startup and treat an unresolved readiness wait as a failure
-to investigate in the logs. The implementation fix is tracked in
-[#347](https://github.com/ankurah/ankurah/issues/347).
-
-**The policy agent.** `PermissiveAgent::new()` performs no authentication
+**The policy agent.** `PermissiveAgent::new()` performs no application authentication
 and no authorization -- it is the development baseline. Before exposing a
 server to anyone you do not fully trust, wire a real agent: see
 [Authentication & Policy](auth.md).
@@ -60,15 +45,14 @@ server to anyone you do not fully trust, wire a real agent: see
 | Postgres | `Postgres::open("postgresql://user:pass@host/db").await` | Server deployments using existing PostgreSQL infrastructure and backup tooling |
 | IndexedDB | automatic in the browser template | Browser clients (WASM); not a server engine |
 
-All engines expose the same `StorageEngine` and `StorageCollection` APIs and
+All engines expose the same `StorageEngine` contract and
 aim for equivalent query semantics. Their planning, platform constraints,
 feature maturity, and operational trade-offs differ. Details:
 [Storage Engine Layer](../internals/storage-engines.md).
 
-For Postgres, the URI is standard `tokio-postgres` form. Tables are created
-on demand -- one state table per collection (named for the collection) plus
-`{collection}_event` -- and property columns are added as models introduce
-them, so no schema migration step is needed for new fields.
+For Postgres, the URI is standard `tokio-postgres` form. The storage engine
+owns the physical tables and ordered maps. Keep entity state, event history,
+Node keys and derived-tree metadata together when backing it up.
 
 ## Ports, TLS, and the browser
 
@@ -79,11 +63,11 @@ own and keep client URLs in sync. Before an internet-facing deployment:
 - **Terminate TLS in front of the server** (reverse proxy or load
   balancer) and point clients at `wss://your-host`. Native clients can
   also bring their own TLS configuration on the connection builder.
-- The WebSocket handshake itself is unauthenticated by design -- requests
-  are authenticated individually inside the protocol (see
-  [Authentication & Policy](auth.md)) -- so `wss://` provides transport
-  confidentiality, integrity, and server identity, not application access
-  control.
+- Ankurah connection setup proves possession of the Node's private key.
+  Application requests still pass through the policy agent (see
+  [Authentication & Policy](auth.md)). Use `wss://` for transport
+  confidentiality, integrity and certificate-based server identity;
+  possession of a Node key does not itself grant application access.
 - Browser clients are WASM builds. React uses a `wasm-pack --target web`
   bindings crate; Leptos compiles the Rust application directly through
   Trunk. The [templates](../getting-started/template.md) wire each path into
@@ -92,11 +76,11 @@ own and keep client URLs in sync. Before an internet-facing deployment:
 A Rust process can also be a client -- useful for workers and services
 that participate in sync rather than owning it:
 
-```rust,ignore
+<pre><code class="language-rust" transclude="example/startup/src/lib.rs#native-client-startup">let storage = SledStorageEngine::with_path(storage_dir)?;
 let node = Node::new(Arc::new(storage), PermissiveAgent::new());
-let _client = WebsocketClient::new(node.clone(), "ws://localhost:9797").await?;
-node.system.wait_system_ready().await;
-```
+let client = WebsocketClient::new(node.clone(), server_url).await?;
+node.wait_ready().await?;
+let context = node.context(DEFAULT_CONTEXT)?;</code></pre>
 
 Hold on to the returned `WebsocketClient` handle for the life of the
 connection, as the example does.
@@ -127,15 +111,13 @@ path is to stop the Ankurah process before copying it. For a database server,
 use its transactional backup tooling. Test restoration into an isolated
 environment before relying on the backup.
 
-On local commits and other event-bearing application paths, events are stored
-before the materialized state that references them. A crash can therefore
-leave those paths with stored events and stale state. A pure `StateSnapshot`
-payload is different: it may persist a snapshot without storing its head
-events, which is intentional for ephemeral working sets. Recovery of a stale
-event-backed state requires redelivery/reapplication of the unapplied event or
-a response carrying the required history; an unrelated descendant alone is not a
-documented recovery guarantee. Engine-level file or transaction recovery
-remains the responsibility of the selected engine.
+In 0.10, canonical entity changes and their supporting events commit in one
+storage transaction. Derived digest trees can persist later and recover from
+canonical state. A durable Node requires supporting history when accepting
+remote updates; ephemeral Nodes can accept authorized state snapshots without
+retaining full history. See [Storage and Transactions](../digest-tree/storage.md)
+and [Durable Replication](../digest-tree/durable-replication.md) for these
+boundaries. Power-loss durability follows the selected engine's configuration.
 
 ## What to monitor
 

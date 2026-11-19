@@ -1,11 +1,15 @@
 # Digest-tree documentation examples
 
-This independent crate pins `6fe7640d1192bcf636fe27e9a26b57f72920644b` on
-`feat/durable-selection-replication`. This is an implemented but unmerged and unreleased
+This independent crate pins `d2a2690786072dd208d197f975ad69de3bcab759` on
+`feat/remove-system-after-node-keys`. This is an implemented but unmerged and unreleased
 0.10 preview, not the API currently available on `main` or crates.io.
 `src/lib.rs` contains the generic examples transcluded into the book with Liaison.
 The `test-support` feature provides the reference MemoryStore; it is used
 here to teach the generic API, not to recommend a production storage engine.
+
+`examples/node_identity.rs` checks persistent identity across reopening, a fresh
+local epoch per Node, terminal reset, a successor's new stored key, and rejection
+through an old Context.
 
 `examples/node_lifecycle.rs` uses public Node APIs and a temporary file-backed
 SQLite database. It checks query activation, a limited result's refill after
@@ -22,13 +26,25 @@ results, not message counts or latency.
 `examples/durable_replication.rs` uses independently stored durable SQLite
 Nodes. It checks asymmetric interests, complete event ancestry, an offline
 Selection exit, retained history and recreation of an interest after reopening.
-Its controlled setup copies only the existing System root and catalog before
-Node construction; application records arrive through replication.
+It initializes each Node independently and imports shared catalog declaration
+events; application records arrive through replication.
 
 Run from the website repository root:
 
 ```sh
+./scripts/check-preview.sh
+```
+
+CI runs this script for the 0.10 branch and pull requests. It checks both native
+and WASM startup snippets, runs the tests and four Node examples below, tests the
+figures, and verifies that a fresh comparison trace exactly matches the committed
+one. It honors `CARGO_TARGET_DIR`; otherwise it uses `example/target/preview`.
+
+To run individual checks or regenerate the trace:
+
+```sh
 cargo test --locked --manifest-path example/digest-tree/Cargo.toml
+cargo run --locked --manifest-path example/digest-tree/Cargo.toml --example node_identity
 cargo run --locked --manifest-path example/digest-tree/Cargo.toml --example node_lifecycle
 cargo run --locked --manifest-path example/digest-tree/Cargo.toml --example query_sync
 cargo run --locked --manifest-path example/digest-tree/Cargo.toml --example durable_replication
@@ -40,17 +56,17 @@ After the generator succeeds, replace
 `PageGetter` calls against four pairs of trees. Its embedded source revision
 identifies the implementation used. The browser replays these observations;
 it does not reimplement digest cryptography or invent network traffic.
-The Node lifecycle, query synchronization and durable replication figures are separately labeled
-conceptual sequences. They explain maintenance/recovery and
-equal-digest/comparison/repair/coverage paths; they are not recorded traffic
-or timing measurements.
+The Node identity, tree maintenance, query synchronization and durable
+replication figures are separately labeled conceptual sequences. They explain
+lifecycle boundaries and maintenance/comparison/repair/coverage paths; they
+are not recorded traffic or timing measurements.
 
 Check the presentation logic and transclude the code and shared controls:
 
 ```sh
 node --test src/digest-tree/figures/model.test.mjs
-liaison src/digest-tree/*.md src/digest-tree/figures/*.html
-liaison --check src/digest-tree/*.md src/digest-tree/figures/*.html
+liaison src/guides/node-lifecycle.md src/digest-tree/*.md src/digest-tree/figures/*.html
+liaison --check src/guides/node-lifecycle.md src/digest-tree/*.md src/digest-tree/figures/*.html
 mdbook build
 python3 scripts/check-links.py
 ```

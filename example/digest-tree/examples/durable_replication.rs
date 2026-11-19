@@ -7,12 +7,9 @@ use ankurah::{
         self,
         ast::{Predicate, Resolved, Selection},
     },
-    core::{
-        error::RetrievalError,
-        storage::{StorageEngine, StorageTransaction},
-    },
+    core::{error::RetrievalError, storage::StorageEngine},
     policy::DEFAULT_CONTEXT,
-    proto::{Clock, EntityId, ModelId, SystemModel},
+    proto::{EntityId, ModelId, SystemModel},
     Model, Node, PermissiveAgent,
 };
 use ankurah_connector_local_process::LocalProcessConnection;
@@ -39,19 +36,19 @@ async fn run() -> anyhow::Result<()> {
         Arc::new(SqliteStorageEngine::open(directory.path().join("left.sqlite")).await?),
         PermissiveAgent::new(),
     );
-    left.system.create().await?;
+    left.wait_ready().await?;
     left.context_async(DEFAULT_CONTEXT)
         .await?
         .resolve_model_id::<Record>()
         .await?;
     let right_path = directory.path().join("right.sqlite");
-    let right = provision(
+    let right = share_catalog(
         &left,
         Arc::new(SqliteStorageEngine::open(&right_path).await?),
     )
     .await?;
 
-    // Application records are deliberately created after provisioning.
+    // Application records arrive through replication, not catalog setup.
     let published_id = create(&left, "Published album", true, false).await?;
     let private_id = create(&left, "Private draft", false, false).await?;
     let favorite_id = create(&right, "Local favorite", false, true).await?;
@@ -59,13 +56,14 @@ async fn run() -> anyhow::Result<()> {
 
     // liaison id=durable-directions
     let published = selection(&right, "published = true").await?;
-    let left_to_right = right.replicate_from(left.id, published.clone(), DEFAULT_CONTEXT)?;
+    let left_to_right =
+        right.replicate_from(left.wait_id().await?, published.clone(), DEFAULT_CONTEXT)?;
     let captured = left_to_right.wait_caught_up().await?;
     assert_eq!(captured.digest.count(), 1);
 
     // The reverse direction is optional and can select different entities.
     let favorites = selection(&left, "favorite = true").await?;
-    let right_to_left = left.replicate_from(right.id, favorites, DEFAULT_CONTEXT)?;
+    let right_to_left = left.replicate_from(right.wait_id().await?, favorites, DEFAULT_CONTEXT)?;
     right_to_left.wait_caught_up().await?;
     // liaison end
 
@@ -121,7 +119,7 @@ async fn run() -> anyhow::Result<()> {
     );
     reopened.wait_ready().await?;
     let _connection = LocalProcessConnection::new(&left, &reopened).await?;
-    let resumed = reopened.replicate_from(left.id, published, DEFAULT_CONTEXT)?;
+    let resumed = reopened.replicate_from(left.wait_id().await?, published, DEFAULT_CONTEXT)?;
     resumed.wait_caught_up().await?;
     // liaison end
     assert_history(&reopened, published_id, 2).await?;
@@ -162,12 +160,15 @@ async fn create(
     Ok(id)
 }
 
-/// This preview still requires a shared System root. Prepare the independent
-/// receiver before opening its Node, using only trusted, quiescent setup data.
-/// Application records are excluded; their history arrives through replication.
-async fn provision(seed: &Durable, storage: Arc<SqliteStorageEngine>) -> anyhow::Result<Durable> {
-    let root = seed.system.root().expect("seed has a persisted root");
-    let mut states = BTreeMap::from([(root.payload.entity_id, root)]);
+/// Independently initialized nodes use the same catalog declarations.
+/// Equal labels alone do not unify models created independently by two nodes.
+async fn share_catalog(
+    seed: &Durable,
+    storage: Arc<SqliteStorageEngine>,
+) -> anyhow::Result<Durable> {
+    let node = Node::new_durable(storage, PermissiveAgent::new());
+    node.wait_ready().await?;
+    let mut states = BTreeMap::new();
     for model in [
         SystemModel::Model,
         SystemModel::Property,
@@ -181,19 +182,15 @@ async fn provision(seed: &Durable, storage: Arc<SqliteStorageEngine>) -> anyhow:
             states.insert(state.payload.entity_id, state);
         }
     }
-    let mut transaction = storage.transaction();
     for state in states.values() {
-        let events = seed
+        let mut events = seed
             .storage
             .dump_entity_events(state.payload.entity_id)
             .await?;
         assert!(!events.is_empty());
-        transaction.set_state(&Clock::default(), state).await?;
-        transaction.add_events(&events).await?;
+        events.sort_by_key(|event| event.payload.generation());
+        node.import_events(&events).await?;
     }
-    transaction.commit().await?.committed()?;
-    let node = Node::new_durable(storage, PermissiveAgent::new());
-    node.wait_ready().await?;
     Ok(node)
 }
 

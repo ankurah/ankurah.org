@@ -1,4 +1,4 @@
-# Node Lifecycle
+# Node-Owned Tree Maintenance
 
 Ordinary fetch and live-query setup open Node-owned digest trees. Applications
 continue to query through a Context; they do not construct a `TreeManager`
@@ -39,12 +39,13 @@ uses a temporary, file-backed SQLite database and a small `Record` model with
 cargo run --locked --manifest-path example/digest-tree/Cargo.toml --example node_lifecycle
 ```
 
-Create a durable Node and wait for its system to become ready. The explicit
+Create a durable Node and wait for its key, catalog and policy to become ready.
+See [Node Identity and Reset](../guides/node-lifecycle.md) for startup and
+identity across restarts. The explicit
 policy below is also the default:
 
 <pre><code class="language-rust" transclude="example/digest-tree/examples/node_lifecycle.rs#node-tree-setup">let storage = SqliteStorageEngine::open(&amp;database).await?;
 let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
-node.system.create().await?;
 node.wait_ready().await?;
 node.set_tree_write_behind(WriteBehind {
     max_changes: 1024,
