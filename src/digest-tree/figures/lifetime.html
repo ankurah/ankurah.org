@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Who keeps a tree alive? · Digest trees</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">TreeManager · one retained tree</p>
+      <h1>Evicted does not mean unowned.</h1>
+      <p class="intro">
+        The manager's LRU has room for one tree. Open B to evict A, then release
+        A's view. Watch which trees an explicit maintenance call can still find.
+      </p>
+      <div class="controls">
+        <button id="open-a">Open tree A</button
+        ><button id="open-b">Open tree B</button
+        ><button id="reset">Reset</button>
+      </div>
+      <div class="controls">
+        <label class="check"
+          ><input id="view" type="checkbox" checked />Keep a view of A</label
+        ><label class="check"
+          ><input id="stream" type="checkbox" />Keep a stream from A</label
+        >
+      </div>
+      <div class="tree-cards">
+        <section id="tree-a" class="tree-card">
+          <h2>Tree A</h2>
+          <div class="state"></div>
+          <div class="owners"></div>
+          <div class="weak"></div>
+        </section>
+        <section id="tree-b" class="tree-card">
+          <h2>Tree B</h2>
+          <div class="state"></div>
+          <div class="owners"></div>
+          <div class="weak"></div>
+        </section>
+      </div>
+      <div class="storage-strip">
+        <strong>Backing storage</strong
+        ><span id="storage-a" class="pill">A persists</span
+        ><span id="storage-b" class="pill" hidden>B persists</span>
+      </div>
+      <div
+        id="caption"
+        class="caption"
+        aria-live="polite"
+        aria-atomic="true"
+      ></div>
+      <p class="note">
+        Opening leaves the returned tree retained only by the LRU; the checkboxes add caller ownership. The weak registry does not own a tree. Views, streams and transactions
+        own strong handles even after LRU eviction. Expired registry entries are
+        pruned during lookup/insertion or enumeration. This illustrates existing
+        manager ownership; Node does not yet drive maintenance.
+      </p>
+      <noscript
+        ><p>
+          Initially A is retained and has a view. Opening B evicts the LRU's A
+          handle, but the view keeps A alive. Releasing that last view makes A's
+          weak reference expire. Reopening A then rebuilds its persisted
+          contents.
+        </p></noscript
+      >
+    </main>
+    <script type="module" src="lifetime.mjs"></script>
+  </body>
+</html>

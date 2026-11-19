@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>One atomic commit · Digest trees</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">An explicit caller of the storage APIs</p>
+      <h1>Both records cross the line together.</h1>
+      <p class="intro">
+        An entity changes from version A to B. Its tree must describe the same
+        version. Step through the storage transaction, then the cache
+        publication.
+      </p>
+      <div class="controls">
+        <label
+          >Transaction outcome<select id="outcome">
+            <option value="commit">Commit succeeds</option>
+            <option value="rollback">Roll back before commit</option>
+            <option value="conflict">Commit detects a conflict</option>
+          </select></label
+        ><span class="pill">Node wiring is still to come</span>
+      </div>
+      <div class="scene">
+        <div id="transaction-status" class="transaction-status">
+          No transaction writes yet.
+        </div>
+        <div class="ledger">
+          <div class="ledger-card">
+            <h2>Persisted entity record</h2>
+            <div id="entity-version" class="version">Version A</div>
+            <p>The owner's canonical state and head.</p>
+          </div>
+          <div class="ledger-card">
+            <h2>Persisted tree records</h2>
+            <div id="tree-version" class="version">Version A</div>
+            <p>The member and affected subtree digests.</p>
+          </div>
+        </div>
+        <div id="cache-status" class="cache-status">
+          Record cache: committed generation A.
+        </div>
+        <div id="timeline" class="timeline" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <div
+        class="playback"
+        role="group"
+        aria-label="Transaction playback"
+        transclude="fragments.html#playback-controls"
+      >
+
+          <button id="play" class="primary" aria-pressed="false">Play</button>
+          <button id="previous" aria-label="Previous step">←</button>
+          <button id="next" aria-label="Next step">→</button>
+          <input
+            id="progress"
+            type="range"
+            min="0"
+            max="4"
+            value="0"
+            aria-label="Explanation step"
+          />
+          <span id="step" class="step-label">0 / 4</span>
+        </div>
+      <div
+        id="caption"
+        class="caption"
+        aria-live="polite"
+        aria-atomic="true"
+      ></div>
+      <p class="note">
+        A and B label complete versions, not numeric Clocks. The
+        rollback/conflict illustration assumes no competing writer changes these
+        displayed records; it shows that this transaction publishes neither of
+        its candidates. Cache publication is optional storage bookkeeping after
+        success, not another durable commit.
+      </p>
+      <noscript
+        ><p>
+          The owner writes entity state, applies tree changes through the same
+          storage transaction, commits, and only then calls landed. A rollback
+          or conflict publishes neither candidate.
+        </p></noscript
+      >
+    </main>
+    <script type="module" src="transaction.mjs"></script>
+  </body>
+</html>

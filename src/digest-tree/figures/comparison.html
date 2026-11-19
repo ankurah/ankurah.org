@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Find the difference · Digest trees</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">The comparison, one request at a time</p>
+      <h1>A little has changed. Where?</h1>
+      <p class="intro">
+        Start with 256 albums on each side. Choose what changes in the other
+        catalog, then follow the pages that reveal the difference.
+      </p>
+      <div class="controls">
+        <label
+          >What changed?<select id="scenario">
+            <option value="both">New album + changed title</option>
+            <option value="added">One new album</option>
+            <option value="changed">One changed title</option>
+            <option value="equal">Nothing: identical sets</option>
+          </select></label
+        ><span class="pill">Actual Rust comparison trace</span>
+      </div>
+      <div id="loading" role="status">Loading the recorded comparison…</div>
+      <div id="explorer" hidden>
+        <div class="scene">
+          <div class="pair">
+            <div class="catalog">
+              <span class="name">Your catalog</span
+              ><span class="number">256</span
+              ><span class="detail">The view doing the comparing</span>
+            </div>
+            <span class="exchange" aria-hidden="true">⇄</span>
+            <div class="catalog">
+              <span class="name">Other catalog</span
+              ><span id="other-count" class="number">257</span
+              ><span class="detail">The view answering page requests</span>
+            </div>
+          </div>
+          <div class="legend">
+            <span><i></i>Not examined</span
+            ><span><i class="equal"></i>Matching span</span
+            ><span><i class="pending"></i>Needs detail</span
+            ><span><i class="read"></i>Members returned</span>
+          </div>
+          <div
+            id="members"
+            class="members"
+            role="img"
+            aria-label="Albums covered by matching digests or returned as members"
+          ></div>
+          <div class="stats">
+            <div class="stat">
+              <strong id="requests">0</strong><span>get_pages calls</span>
+            </div>
+            <div class="stat">
+              <strong id="received">0</strong
+              ><span>member payloads returned</span>
+            </div>
+            <div class="stat">
+              <strong id="differences">—</strong
+              ><span>differences reported</span>
+            </div>
+          </div>
+        </div>
+        <div
+          class="playback"
+          role="group"
+          aria-label="Comparison playback"
+          transclude="fragments.html#playback-controls"
+        >
+
+            <button id="play" class="primary" aria-pressed="false">Play</button>
+            <button id="previous" aria-label="Previous step">←</button>
+            <button id="next" aria-label="Next step">→</button>
+            <input
+              id="progress"
+              type="range"
+              min="0"
+              max="4"
+              value="0"
+              aria-label="Explanation step"
+            />
+            <span id="step" class="step-label">0 / 4</span>
+          </div>
+        <div
+          id="caption"
+          class="caption"
+          aria-live="polite"
+          aria-atomic="true"
+        ></div>
+        <details id="response" class="response">
+          <summary>Inspect this round's response</summary>
+          <div id="responses" class="responses"></div>
+        </details>
+        <div id="changes" class="changes"></div>
+        <p class="note">
+          Each square is one album. Colors show which spans were skipped or
+          examined; they do not draw the trie's physical shape. Traces use the
+          real 64-member bucket capacity and default Ristretto255 group. This is
+          an in-process comparison, not Node's network protocol.
+        </p>
+      </div>
+      <noscript
+        ><p>
+          This interactive replay needs JavaScript. A comparison skips matching
+          span digests and requests smaller pages only where they differ. The
+          surrounding chapter describes each step.
+        </p></noscript
+      >
+    </main>
+    <script type="module" src="comparison.mjs"></script>
+  </body>
+</html>

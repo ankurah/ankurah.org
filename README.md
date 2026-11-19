@@ -2,6 +2,23 @@
 
 This repository contains the source code for the [Ankurah](https://ankurah.org) documentation website.
 
+## 0.10 preview branch
+
+`docs/0.10` prepares documentation for the unreleased 0.10 version. The Entity
+Lifecycle chapter covers the current StorageEngine branch; other chapters
+remain based on 0.9 unless marked otherwise. This branch does not change the published website.
+
+The [Digest Trees](src/digest-tree/index.md) section covers the implemented
+0.10 foundation and distinguishes it from future Node integration. Its pages
+and interactive figures are authored in this repository, outside the generated
+`src/internals/` directory. See [the executable examples](example/digest-tree/README.md)
+for Liaison, trace regeneration and validation commands.
+
+The lifecycle chapter and its diagram source live in the ankurah repository's
+`docs/internals/` directory. Keep the website copies in sync when revising them.
+For a documentation-only local preview, run `mdbook serve --hostname 127.0.0.1`
+and open `/internals/entity-lifecycle.html`.
+
 ## Structure
 
 - `index.html` - Custom landing page

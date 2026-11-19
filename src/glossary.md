@@ -80,6 +80,64 @@ Ankurah is beta software, so do not assume identical feature maturity across all
 
 A collection of entities in a storage engine. The physical representation of a Collection in the storage layer.
 
+## Digest Trees (0.10)
+
+These terms describe the [digest-tree foundation](digest-tree/index.md).
+Node integration is still to come.
+
+### Member
+
+One item an owner includes in a digest tree. It supplies a member ID, values
+for the tree's key specification, and a payload. The generic crate does not
+decide membership or require members to be Ankurah entities.
+
+### Key and Address
+
+A member's key encodes its ordered property values under a `KeySpec`. Its
+address combines the key and member ID with framing. Addresses sort by key,
+then by ID bytes, so equal keys do not make two members indistinguishable.
+
+### Digest
+
+A count and a group sum derived from a set of members' keys, IDs and payload
+digest bytes. Matching digests let comparison skip a span, subject to the
+chosen group's collision-resistance assumptions.
+
+### Span
+
+A range of encoded member addresses. A key range names bounds in property
+values and is lowered into a span using the tree's key specification.
+
+### Digest Tree View
+
+A read-only handle to a tree restricted to some spans. `DigestTreeView` is
+live, with a consistent state per read or stream batch. It is distinct from
+a model's generated entity View and does not freeze a whole query snapshot.
+
+### Page
+
+An answer to a digest-tree comparison read: either span digests one level
+down or the members within the requested span. A page is built from tree
+records when requested; it is not a persistent storage page.
+
+### Tree Record
+
+One key/value item kept by a digest tree's Store. The Rust type is `Row`:
+metadata, a tree node's digest and branching information, or a member's
+payload and digest element. It is not the canonical record of an entity.
+
+### Tree Node
+
+A branching point or terminal bucket in the digest tree's trie. It describes
+members beneath it. An Ankurah Node, by contrast, is a network participant.
+
+### Selection
+
+A predicate together with optional ordering and limit. A resolved Selection
+identifies properties by their resolved IDs. TreeManager currently looks up
+exact Selections and maintains their full predicate membership; a query
+caller applies the read limit.
+
 ## Operations
 
 ### Transaction

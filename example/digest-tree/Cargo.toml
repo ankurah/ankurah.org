@@ -1,0 +1,17 @@
+[package]
+name = "digest-tree-examples"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# This preview follows the merged implementation until 0.10 is released.
+[dependencies]
+ankurah-core-types = { git = "https://github.com/ankurah/ankurah", rev = "ec7a15625900fcec0403176f03713acaef1280df" }
+ankurah-digest-tree = { git = "https://github.com/ankurah/ankurah", rev = "ec7a15625900fcec0403176f03713acaef1280df", features = ["test-support"] }
+anyhow = "1"
+futures = "0.3"
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt"] }
+
+# Keep this preview independent of the website's application example.
+[workspace]
