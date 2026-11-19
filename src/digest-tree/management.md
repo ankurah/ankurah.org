@@ -1,8 +1,8 @@
 # Tree Management
 
 `ankurah_core::sync::TreeManager` connects core's entities and Selections to
-the generic digest-tree crate. Each Node owns one manager shared by fetch
-and live-query setup. It opens trees, retains recent ones, and reconciles
+the generic digest-tree crate. Each Node owns one manager shared by fetch,
+live-query setup and durable replication. It opens trees, retains recent ones, and reconciles
 their membership with canonical entity state.
 
 This chapter describes the [pinned, unreleased Node preview](index.md).

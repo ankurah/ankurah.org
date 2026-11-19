@@ -202,6 +202,20 @@ a concurrent head needs event repair. Query comparison finishes when it
 covers the target, without discarding extra local state. See
 [Query Synchronization](digest-tree/query-sync.md).
 
+### Directional Replication Interest
+
+A receiver's instruction to maintain one Selection from a particular durable
+source, under its current credentials. The reverse direction is configured
+independently and may select different entities. A `Replication` handle keeps
+the interest active; accepted history remains after the last handle is dropped.
+
+### CaughtUp
+
+The `ReplicationState` reporting that a completed source capture is covered
+by durably stored event history. It permits extra local entities and newer
+descendants, and does not cover later source changes. See
+[Durable Replication](digest-tree/durable-replication.md#caught-up-to-which-version).
+
 ## Operations
 
 ### Transaction

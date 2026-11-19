@@ -6,8 +6,9 @@ digest trees to discover the missing work. Applications still call `fetch`
 and `query`; Node manages the comparison underneath them.
 
 This chapter describes the [unreleased preview](index.md). It covers query
-answers and standing live queries. Durable-to-durable replication, with its
-own retention and replication policy, is separate work.
+answers and standing live queries. [Durable replication](durable-replication.md)
+uses the same comparison machinery with explicit directional interests and
+event-backed admission.
 
 ## A target to cover
 

@@ -110,5 +110,6 @@ initial target. The comparison covers that target; Reactor continues to own
 later changes. See [Query Synchronization](query-sync.md) for the protocol,
 authorization boundary and executable reconnect example.
 
-Cross-Selection tree reuse, a configured LIMIT cap, Reactor optimization,
-and durable-to-durable replication remain outside this preview.
+[Durable replication](durable-replication.md) also retains maintained trees
+between its comparison sweeps. Cross-Selection tree reuse, a configured LIMIT
+cap and Reactor optimization remain outside this preview.

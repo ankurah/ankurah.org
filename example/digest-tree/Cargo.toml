@@ -4,13 +4,13 @@ version = "0.0.0"
 edition = "2021"
 publish = false
 
-# This preview pins the implemented, unmerged query comparison branch.
+# This preview pins the implemented, unmerged durable replication branch.
 [dependencies]
-ankurah = { git = "https://github.com/ankurah/ankurah", rev = "bf40c3832149a18d7eb569cc800a0e61d2e88fd8", features = ["derive"] }
-ankurah-core-types = { git = "https://github.com/ankurah/ankurah", rev = "bf40c3832149a18d7eb569cc800a0e61d2e88fd8" }
-ankurah-connector-local-process = { git = "https://github.com/ankurah/ankurah", rev = "bf40c3832149a18d7eb569cc800a0e61d2e88fd8" }
-ankurah-digest-tree = { git = "https://github.com/ankurah/ankurah", rev = "bf40c3832149a18d7eb569cc800a0e61d2e88fd8", features = ["test-support"] }
-ankurah-storage-sqlite = { git = "https://github.com/ankurah/ankurah", rev = "bf40c3832149a18d7eb569cc800a0e61d2e88fd8" }
+ankurah = { git = "https://github.com/ankurah/ankurah", rev = "5d223bdf5f65542a2aa966e951dab47101a46521", features = ["derive"] }
+ankurah-core-types = { git = "https://github.com/ankurah/ankurah", rev = "5d223bdf5f65542a2aa966e951dab47101a46521" }
+ankurah-connector-local-process = { git = "https://github.com/ankurah/ankurah", rev = "5d223bdf5f65542a2aa966e951dab47101a46521" }
+ankurah-digest-tree = { git = "https://github.com/ankurah/ankurah", rev = "5d223bdf5f65542a2aa966e951dab47101a46521", features = ["test-support"] }
+ankurah-storage-sqlite = { git = "https://github.com/ankurah/ankurah", rev = "5d223bdf5f65542a2aa966e951dab47101a46521" }
 anyhow = "1"
 futures = "0.3"
 serde = { version = "1", features = ["derive"] }

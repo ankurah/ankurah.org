@@ -32,7 +32,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "ankql"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
+source = "git+https://github.com/ankurah/ankurah?rev=5d223bdf5f65542a2aa966e951dab47101a46521#5d223bdf5f65542a2aa966e951dab47101a46521"
 dependencies = [
  "ankurah-core-types",
  "pest",
@@ -45,7 +45,7 @@ dependencies = [
 [[package]]
 name = "ankurah"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
+source = "git+https://github.com/ankurah/ankurah?rev=5d223bdf5f65542a2aa966e951dab47101a46521#5d223bdf5f65542a2aa966e951dab47101a46521"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -60,7 +60,7 @@ dependencies = [
 [[package]]
 name = "ankurah-connector-local-process"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
+source = "git+https://github.com/ankurah/ankurah?rev=5d223bdf5f65542a2aa966e951dab47101a46521#5d223bdf5f65542a2aa966e951dab47101a46521"
 dependencies = [
  "ankurah-core",
  "ankurah-proto",
@@ -73,7 +73,7 @@ dependencies = [
 [[package]]
 name = "ankurah-core"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
+source = "git+https://github.com/ankurah/ankurah?rev=5d223bdf5f65542a2aa966e951dab47101a46521#5d223bdf5f65542a2aa966e951dab47101a46521"
 dependencies = [
  "ankql",
  "ankurah-core-types",
@@ -110,7 +110,7 @@ dependencies = [
 [[package]]
 name = "ankurah-core-types"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
+source = "git+https://github.com/ankurah/ankurah?rev=5d223bdf5f65542a2aa966e951dab47101a46521#5d223bdf5f65542a2aa966e951dab47101a46521"
 dependencies = [
  "anyhow",
  "base64",
@@ -125,7 +125,7 @@ dependencies = [
 [[package]]
 name = "ankurah-derive"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
+source = "git+https://github.com/ankurah/ankurah?rev=5d223bdf5f65542a2aa966e951dab47101a46521#5d223bdf5f65542a2aa966e951dab47101a46521"
 dependencies = [
  "ankql",
  "ankurah-core-types",
@@ -142,7 +142,7 @@ dependencies = [
 [[package]]
 name = "ankurah-digest-tree"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
+source = "git+https://github.com/ankurah/ankurah?rev=5d223bdf5f65542a2aa966e951dab47101a46521#5d223bdf5f65542a2aa966e951dab47101a46521"
 dependencies = [
  "ankurah-core-types",
  "blake3",
@@ -158,7 +158,7 @@ dependencies = [
 [[package]]
 name = "ankurah-proto"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
+source = "git+https://github.com/ankurah/ankurah?rev=5d223bdf5f65542a2aa966e951dab47101a46521#5d223bdf5f65542a2aa966e951dab47101a46521"
 dependencies = [
  "ankql",
  "ankurah-core-types",
@@ -181,7 +181,7 @@ dependencies = [
 [[package]]
 name = "ankurah-signals"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
+source = "git+https://github.com/ankurah/ankurah?rev=5d223bdf5f65542a2aa966e951dab47101a46521#5d223bdf5f65542a2aa966e951dab47101a46521"
 dependencies = [
  "reactive_graph",
  "tokio",
@@ -191,7 +191,7 @@ dependencies = [
 [[package]]
 name = "ankurah-storage-common"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
+source = "git+https://github.com/ankurah/ankurah?rev=5d223bdf5f65542a2aa966e951dab47101a46521#5d223bdf5f65542a2aa966e951dab47101a46521"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -208,7 +208,7 @@ dependencies = [
 [[package]]
 name = "ankurah-storage-sqlite"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
+source = "git+https://github.com/ankurah/ankurah?rev=5d223bdf5f65542a2aa966e951dab47101a46521#5d223bdf5f65542a2aa966e951dab47101a46521"
 dependencies = [
  "ankql",
  "ankurah-core",

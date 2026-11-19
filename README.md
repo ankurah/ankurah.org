@@ -9,11 +9,12 @@ Lifecycle chapter covers the current StorageEngine branch; other chapters
 remain based on 0.9 unless marked otherwise. This branch does not change the published website.
 
 The [Digest Trees](src/digest-tree/index.md) section covers the foundation,
-Node-owned maintenance and query synchronization on `feat/query-digest-comparison` at
-`bf40c3832149a18d7eb569cc800a0e61d2e88fd8`. That checkpoint is an unmerged,
+Node-owned maintenance, query synchronization and durable replication on `feat/durable-selection-replication` at
+`5d223bdf5f65542a2aa966e951dab47101a46521`. That checkpoint is an unmerged,
 unreleased preview, not the API on `main` or crates.io. Fetch and live-query
 initialization/reconnect compare captured digests and repair differences
-through the existing peer update channel. The pages and interactive
+through the existing peer update channel. Durable replication independently
+configures each direction and retains accepted event histories. The pages and interactive
 figures are authored in this repository, outside the generated
 `src/internals/` directory. See [the executable examples](example/digest-tree/README.md)
 for Liaison, trace regeneration and validation commands.
