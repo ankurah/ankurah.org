@@ -67,17 +67,23 @@ important when [TreeManager](management.md) evicts its own retained handle.
 
 The generic tree has no Selection or predicate evaluator. Its owner decides
 what belongs. Core's manager maintains the exact resolved Selection's result,
-including `LIMIT`. For a limited Selection it reads the engine's actual query
-result again during reconciliation, so an unchanged candidate can refill a
-place vacated by another member. It does not keep every predicate match in
-the limited tree or reproduce the engine's query in a second sorter.
+including `LIMIT`. An initial build reads the engine's selected result.
+Incremental maintenance uses the tree as the ordered selected prefix: it
+checks changed IDs against the predicate at one canonical snapshot, applies
+changes and trims excess members. If a gap remains, a query strictly after
+the surviving boundary supplies the missing suffix from that same snapshot.
+An unchanged album can therefore refill a vacated place without a full query
+on every change or a second permanent sorted result.
 
-For limited queries, the storage engines add ascending entity-ID order to
+For ordered or limited queries, the storage engines add ascending entity-ID order to
 break ties unless an explicit ID order already supplies it. An explicit
 `id DESC` remains descending.
 This determines which tied members enter a limited result; the generic
 address encoding described above still distinguishes every member.
-Existing cross-engine NULL and JSON ordering differences remain.
+The four storage engines and digest keys share canonical value ordering,
+including JSON and entity references. Missing values sort last in ascending
+order and first in descending order. This agreement is required for a strict
+suffix query to continue the same order as the tree.
 
 Different limits identify different trees. See
 [Tree Management](management.md#one-selection-one-lookup) for exact lookup

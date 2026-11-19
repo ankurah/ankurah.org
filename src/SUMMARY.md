@@ -47,6 +47,7 @@
   - [Storage and Transactions](digest-tree/storage.md)
   - [Tree Management](digest-tree/management.md)
   - [Node Lifecycle](digest-tree/node-lifecycle.md)
+  - [Query Synchronization](digest-tree/query-sync.md)
 - [Node Architecture and Replication](internals/node-architecture.md)
 - [Property Backends](internals/property-backends.md)
 - [LWW Merge Resolution](internals/lww-merge.md)

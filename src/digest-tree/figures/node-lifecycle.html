@@ -108,8 +108,8 @@
         </p>
         <p>
           Reconciliation uses the latest visible canonical states, including
-          adopted snapshots. Limited selections reread the engine's selected
-          result, including refills. A failed source validation publishes no
+          adopted snapshots. Limited selections check changed IDs and
+          refill only a missing suffix at the same source boundary. A failed source validation publishes no
           partial candidate and can be retried. This figure assumes validation
           and the eventual tree flush succeed.
         </p>

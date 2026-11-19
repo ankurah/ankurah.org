@@ -1,6 +1,6 @@
 //! Executable examples used by the digest-tree chapters and comparison figure.
 
-use std::{borrow::Cow, convert::Infallible};
+use std::{borrow::Cow, convert::Infallible, num::NonZeroUsize};
 
 use ankurah_core_types::{
     key_spec::{IndexKeyPart, KeySpec},
@@ -121,6 +121,29 @@ pub async fn read_range(tree: &Tree) -> anyhow::Result<Vec<Id>> {
 }
 // liaison end
 
+// liaison id=compare-batches
+pub async fn find_changes_in_batches() -> anyhow::Result<()> {
+    let ours = albums_tree(Vec::new()).await?;
+    let theirs = albums_tree(
+        (1..=300)
+            .map(|id| album(id, 1800 + id as i32, "Album"))
+            .collect(),
+    )
+    .await?;
+    let mut comparison = ours
+        .view()
+        .compare(theirs.view(), NonZeroUsize::new(32).unwrap());
+    let mut found = 0;
+    while let Some(batch) = comparison.next_batch().await? {
+        assert!(batch.len() <= 32);
+        // A caller can process this batch before asking for the next one.
+        found += batch.len();
+    }
+    assert_eq!(found, 300);
+    Ok(())
+}
+// liaison end
+
 // liaison id=change-member
 pub async fn retitle(tree: &Tree, before: Album) -> anyhow::Result<()> {
     let after = Album {
@@ -141,6 +164,11 @@ mod tests {
     #[tokio::test]
     async fn comparison_finds_the_missing_member() {
         find_changes().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn incremental_comparison_visits_every_missing_member() {
+        find_changes_in_batches().await.unwrap();
     }
 
     #[tokio::test]

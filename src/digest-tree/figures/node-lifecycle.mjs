@@ -93,7 +93,7 @@ const endings = {
         "The new Node opens A · C0 and reconstructs the pending changes.",
       title: "Reopen and reconcile before serving the tree.",
       detail:
-        "An unlimited selection scans canonical changes since C0. A limited selection rereads the engine query result. Recovery need not replay every intermediate event.",
+        "Reconciliation scans canonical changes since C0. A limited tree keeps its selected prefix and refills a gap from the same snapshot. Recovery need not replay every intermediate event.",
     },
     {
       canonical: "B",

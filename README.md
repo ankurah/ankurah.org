@@ -8,11 +8,12 @@ This repository contains the source code for the [Ankurah](https://ankurah.org) 
 Lifecycle chapter covers the current StorageEngine branch; other chapters
 remain based on 0.9 unless marked otherwise. This branch does not change the published website.
 
-The [Digest Trees](src/digest-tree/index.md) section covers the foundation and
-Node-owned maintenance implemented on `feat/node-digest-trees` at
-`d635ea5358396a2812526175f30471266ab7d8bb`. That checkpoint is an unmerged,
-unreleased preview, not the API on `main` or crates.io. Network receivers still
-use the legacy inventory for transfer decisions. The pages and interactive
+The [Digest Trees](src/digest-tree/index.md) section covers the foundation,
+Node-owned maintenance and query synchronization on `feat/query-digest-comparison` at
+`bf40c3832149a18d7eb569cc800a0e61d2e88fd8`. That checkpoint is an unmerged,
+unreleased preview, not the API on `main` or crates.io. Fetch and live-query
+initialization/reconnect compare captured digests and repair differences
+through the existing peer update channel. The pages and interactive
 figures are authored in this repository, outside the generated
 `src/internals/` directory. See [the executable examples](example/digest-tree/README.md)
 for Liaison, trace regeneration and validation commands.

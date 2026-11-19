@@ -4,18 +4,19 @@ version = "0.0.0"
 edition = "2021"
 publish = false
 
-# This preview pins the implemented, unmerged Node integration branch.
+# This preview pins the implemented, unmerged query comparison branch.
 [dependencies]
-ankurah = { git = "https://github.com/ankurah/ankurah", rev = "d635ea5358396a2812526175f30471266ab7d8bb", features = ["derive"] }
-ankurah-core-types = { git = "https://github.com/ankurah/ankurah", rev = "d635ea5358396a2812526175f30471266ab7d8bb" }
-ankurah-digest-tree = { git = "https://github.com/ankurah/ankurah", rev = "d635ea5358396a2812526175f30471266ab7d8bb", features = ["test-support"] }
-ankurah-storage-sqlite = { git = "https://github.com/ankurah/ankurah", rev = "d635ea5358396a2812526175f30471266ab7d8bb" }
+ankurah = { git = "https://github.com/ankurah/ankurah", rev = "bf40c3832149a18d7eb569cc800a0e61d2e88fd8", features = ["derive"] }
+ankurah-core-types = { git = "https://github.com/ankurah/ankurah", rev = "bf40c3832149a18d7eb569cc800a0e61d2e88fd8" }
+ankurah-connector-local-process = { git = "https://github.com/ankurah/ankurah", rev = "bf40c3832149a18d7eb569cc800a0e61d2e88fd8" }
+ankurah-digest-tree = { git = "https://github.com/ankurah/ankurah", rev = "bf40c3832149a18d7eb569cc800a0e61d2e88fd8", features = ["test-support"] }
+ankurah-storage-sqlite = { git = "https://github.com/ankurah/ankurah", rev = "bf40c3832149a18d7eb569cc800a0e61d2e88fd8" }
 anyhow = "1"
 futures = "0.3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tempfile = "3"
-tokio = { version = "1", features = ["macros", "rt"] }
+tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
 
 # Keep this preview independent of the website's application example.
 [workspace]

@@ -83,7 +83,8 @@ A collection of entities in a storage engine. The physical representation of a C
 ## Digest Trees (0.10)
 
 These terms describe the [digest-tree preview](digest-tree/index.md), including
-Node-owned maintenance on the pinned, unmerged implementation branch.
+Node-owned maintenance and query synchronization on the pinned, unmerged
+implementation branch.
 
 ### Member
 
@@ -136,7 +137,8 @@ members beneath it. An Ankurah Node, by contrast, is a network participant.
 A predicate together with optional ordering and limit. A resolved Selection
 identifies properties by their resolved IDs. TreeManager currently looks up
 exact Selections and maintains their result membership, including `LIMIT`.
-Limited selections use the storage engine's actual query result and refills.
+A limited tree holds the selected prefix; incremental maintenance checks
+changed IDs and queries a strict suffix only when it needs to refill a gap.
 
 ### TreeManager
 
@@ -161,9 +163,44 @@ a maintained batch. See [Node Lifecycle](digest-tree/node-lifecycle.md).
 
 ### KnownState
 
-The digest summary sent with a fetch or subscription request's `known_matches`.
-Both describe one authorized canonical version. In this preview, receivers
-still use only `known_matches` for transfer decisions and completion.
+The digest of a requester's authorized, locally known query members. Fetch
+and subscription requests send it with a key specification instead of a full
+`known_matches` inventory. Matching target digests skip comparison and repair.
+
+### Capture
+
+A fixed, authorized tree version retained for one query comparison. Ordinary
+managed trees remain live; a capture reads its older version through short
+storage snapshots and retained before-images. It has a bounded lifetime and
+can require a restart when its history is no longer available.
+
+### Before-image
+
+A tree record's value immediately before a write, including a marker for an
+absent record. The adapter saves bounded before-images atomically with tree
+generations so captures can reconstruct their durable base. These are derived
+tree records, not copies of entity history.
+
+### Comparison Target
+
+The peer's captured query answer, identified by a comparison ID, key
+specification and digest. It defines which entity heads the requester must
+cover; the peer may have advanced since it captured this answer.
+
+### Repair
+
+State or causal events delivered to reconcile an entity discovered during
+comparison. Node sends bounded repairs through the existing peer update
+channel. A comparison page identifies work; it does not itself contain a
+complete entity state.
+
+### Coverage
+
+Having a captured entity head, or a causal descendant of that head, in local
+canonical state. A newer descendant already includes the captured changes;
+a concurrent head needs event repair. Query comparison finishes when it
+covers the target, without discarding extra local state. See
+[Query Synchronization](digest-tree/query-sync.md).
 
 ## Operations
 

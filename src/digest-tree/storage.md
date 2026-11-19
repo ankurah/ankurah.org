@@ -122,12 +122,19 @@ snapshot adoption without needing every intervening event.
 |---|---|
 | `Changes(cursor)` | Latest visible states of identities changed since the cursor; no cursor means a full scan |
 | `Selection(selection)` | The engine's complete limited-query result, including unchanged replacement members |
+| `SelectionChanges { selection, since }` | Changed states with predicate checks and ordered refill available at that same boundary |
 
 Point reads use that same boundary. `finish()` validates and closes the
 snapshot and returns an opaque `StateCursor`. A failed or cancelled finish
 establishes no coverage: the manager discards that attempt instead of
 publishing a partially reconciled tree. Several changes to one entity can
 be coalesced into its latest visible state.
+
+For incremental limited maintenance, `matching_ids` checks changed candidates
+against the Selection at this boundary. `select_after` reads a bounded suffix
+strictly after an `OrderBoundary`, including the entity-ID tie-breaker. Both
+use the same snapshot as the change pages and point reads, so refill cannot
+silently mix two versions of the query.
 
 The cursor belongs to one storage incarnation. It is neither an entity's
 causal clock nor a peer's known state, and the manager must not interpret
@@ -146,6 +153,31 @@ Sled, SQLite and IndexedDB use transactional state counters and incarnation
 checks. Engines either hold a native snapshot or reject a read whose
 canonical boundary moves. A moved active read is retryable; a saved cursor
 from another incarnation requires reconstruction.
+
+## Captured versions survive short reads
+
+A normal `DigestTreeView` is live. Network comparison instead needs every
+page to describe the same authorized tree version, even if maintenance or a
+flush runs between requests. Node retains the original managed owner and
+creates a read-only capture of its private version.
+
+A **before-image** is the value a tree record held immediately before a
+write, or a marker that the record did not exist. The adapter commits these
+before-images atomically with each ordinary tree generation. A capture reads
+a short storage snapshot and uses the retained history to reconstruct its
+older durable base, then applies its own fixed overlay. It does not keep an
+engine transaction or lock open across a network wait.
+
+History is bounded: this preview retains at most 64 generations, 16,384
+before-images and 8 MiB of encoded history per tree. These are implementation
+limits, not a guarantee that any capture lasts a particular time. A large
+write, pruning, clear/rebuild/reset, or malformed history can make an older
+version unavailable. Reading then returns a retryable conflict instead of
+combining records from different generations.
+
+The before-images describe derived tree records, not a second archive of
+entity states or events. Repair still reads canonical state and uses causal
+events to establish [coverage](query-sync.md#a-target-to-cover).
 
 ## Record caching belongs to the adapter
 

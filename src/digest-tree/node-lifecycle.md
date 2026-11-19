@@ -63,7 +63,10 @@ assert_eq!(titles(&amp;first_page)?, [&quot;First&quot;, &quot;Second&quot;]);</
 
 Marking First unavailable removes it from the result. Third refills its place
 even though Third did not change. The maintained tree contains this limited
-result; the storage engine supplies the refill through its normal query path.
+result. During incremental maintenance, the tree itself holds the ordered
+selected prefix. Node evaluates changed IDs at one canonical snapshot, trims
+any excess, and asks the engine only for a missing suffix when a gap remains.
+It does not retain a second sorted result or rerun the full query on every change.
 
 <pre><code class="language-rust" transclude="example/digest-tree/examples/node_lifecycle.rs#node-tree-refill">let transaction = context.begin();
 first_page[0].edit(&amp;transaction)?.available()?.set(&amp;false)?;
@@ -95,21 +98,17 @@ does not inspect a private Node tree or simulate a process crash. The
 why unflushed tree records can recover, including adopted state snapshots
 and PostgreSQL transactions that commit after a saved boundary.
 
-## What requests advertise today
+## From maintained trees to network queries
 
-Fetch and subscription requests carry both the existing `known_matches`
-inventory and a `KnownState` digest. They are prepared from one authorized
-canonical version. Query scoping happens at its established boundary, and
-current credentials separately gate every advertised member, including on
-reconnect after credentials narrow.
+Fetch and subscription setup capture an authorized version of a maintained
+tree, then advertise its key specification and digest. The digest replaces
+the full `known_matches` inventory. Peers compare differing spans and send
+needed state or events through their existing update channel.
 
-Receivers still use only `known_matches` to decide transfers and completion.
-The summary does not suppress state transfer, replace the inventory, or
-establish that a query is complete. The inventory therefore still grows
-with the number of known members. With narrowed credentials, disclosure
-checks can conservatively advertise fewer members of an installed limited
-Selection; they do not refill it under a newly resolved session Selection.
+A live query installs its standing Reactor subscription before capturing the
+initial target. The comparison covers that target; Reactor continues to own
+later changes. See [Query Synchronization](query-sync.md) for the protocol,
+authorization boundary and executable reconnect example.
 
-Network digest comparison and repair, replacing the legacy inventory,
-cross-Selection tree reuse, a configured LIMIT cap, and Reactor optimization
-remain outside this preview.
+Cross-Selection tree reuse, a configured LIMIT cap, Reactor optimization,
+and durable-to-durable replication remain outside this preview.

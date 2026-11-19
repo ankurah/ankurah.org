@@ -1,7 +1,7 @@
 # Digest-tree documentation examples
 
-This independent crate pins `d635ea5358396a2812526175f30471266ab7d8bb` on
-`feat/node-digest-trees`. This is an implemented but unmerged and unreleased
+This independent crate pins `bf40c3832149a18d7eb569cc800a0e61d2e88fd8` on
+`feat/query-digest-comparison`. This is an implemented but unmerged and unreleased
 0.10 preview, not the API currently available on `main` or crates.io.
 `src/lib.rs` contains the generic examples transcluded into the book with Liaison.
 The `test-support` feature provides the reference MemoryStore; it is used
@@ -12,11 +12,19 @@ SQLite database. It checks query activation, a limited result's refill after
 a canonical change, explicit tree flushing and reopening. It does not expose
 the Node's private trees or simulate a crash. Its snippets also use Liaison.
 
+`examples/query_sync.rs` connects an ephemeral client to a durable server
+using the local-process connector and separate temporary SQLite databases.
+It checks repeated fetch, a predicate exit with LIMIT refill, a live query
+reconnecting after an offline edit, and a later standing update. Its snippets
+are transcluded into Query Synchronization. The checks verify observable
+results, not message counts or latency.
+
 Run from the website repository root:
 
 ```sh
 cargo test --locked --manifest-path example/digest-tree/Cargo.toml
 cargo run --locked --manifest-path example/digest-tree/Cargo.toml --example node_lifecycle
+cargo run --locked --manifest-path example/digest-tree/Cargo.toml --example query_sync
 cargo run --locked --quiet --manifest-path example/digest-tree/Cargo.toml --example trace > /tmp/digest-tree-trace.json
 ```
 
@@ -25,8 +33,10 @@ After the generator succeeds, replace
 `PageGetter` calls against four pairs of trees. Its embedded source revision
 identifies the implementation used. The browser replays these observations;
 it does not reimplement digest cryptography or invent network traffic.
-The Node lifecycle figure is a separately labeled conceptual sequence, with
-flush and restart paths; it is not a recorded execution.
+The Node lifecycle and query synchronization figures are separately labeled
+conceptual sequences. They explain maintenance/recovery and
+equal-digest/comparison/repair/coverage paths; they are not recorded traffic
+or timing measurements.
 
 Check the presentation logic and transclude the code and shared controls:
 
@@ -47,5 +57,6 @@ explanation without relying on animation or color.
 
 When updating the dependency revision, rerun the tests, regenerate the
 trace, and review both the prose and recorded results. The Node preview
-maintains trees and includes `KnownState` alongside `known_matches`; network
-receivers still use only the latter for transfer decisions and completion.
+uses digest-based comparison for Fetch and live-query initialization/reconnect.
+Reactor still owns standing live updates; durable replication is outside
+this preview.

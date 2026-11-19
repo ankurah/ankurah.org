@@ -8,9 +8,9 @@ smaller spans or the members themselves.
 
 `DigestTreeView::differences` performs the comparison. A `PageGetter` supplies
 the other tree's answers. A getter can read another view in the same process,
-as this example does. The Node preview sends a summary in `KnownState`, but
-receivers do not yet use digest comparison to choose network transfers.
-The crate itself does not implement that transport.
+as this example does. Node supplies a network getter for
+[query synchronization](query-sync.md), including authorization and resource
+limits. The crate owns the descent; it does not implement the transport.
 
 <pre><code class="language-rust" transclude="example/digest-tree/src/lib.rs#compare-trees">pub async fn find_changes() -&gt; anyhow::Result&lt;()&gt; {
     let first = album(1, 2008, &quot;Walking on a Dream&quot;);
@@ -46,6 +46,41 @@ This replay uses actual traces from the pinned Rust example. The number of
 requests and members returned belongs to this data set; it is not a fixed
 performance guarantee. Dense differences can require reading much of a tree.
 
+## Consume differences in bounded batches
+
+`differences` collects the complete result and pairs moved members by ID.
+`compare` instead returns a cursor: `next_batch` yields at most the chosen
+number of differences, and the caller can repair them before reading more.
+Node uses this incremental form. Even an empty remote span containing many
+local members is enumerated in bounded batches.
+
+<pre><code class="language-rust" transclude="example/digest-tree/src/lib.rs#compare-batches">pub async fn find_changes_in_batches() -&gt; anyhow::Result&lt;()&gt; {
+    let ours = albums_tree(Vec::new()).await?;
+    let theirs = albums_tree(
+        (1..=300)
+            .map(|id| album(id, 1800 + id as i32, &quot;Album&quot;))
+            .collect(),
+    )
+    .await?;
+    let mut comparison = ours
+        .view()
+        .compare(theirs.view(), NonZeroUsize::new(32).unwrap());
+    let mut found = 0;
+    while let Some(batch) = comparison.next_batch().await? {
+        assert!(batch.len() &lt;= 32);
+        // A caller can process this batch before asking for the next one.
+        found += batch.len();
+    }
+    assert_eq!(found, 300);
+    Ok(())
+}</code></pre>
+
+A batch pairs leaves at the same address. A moved member can appear in two
+different batches; the cursor does not keep a global member-ID map to pair
+those observations. Consult canonical state before applying a difference.
+Use the collecting API when its global pairing is needed and its memory use
+is acceptable. The getter still controls how large an accepted page can be.
+
 ## The structure behind an answer
 
 The tree is a path-compressed binary trie over address bits. Branches divide
@@ -59,9 +94,10 @@ returned by the other tree and computes its own digests over those bounds.
 
 ## What a difference means
 
-`Difference { ours, theirs }` pairs the observed versions by member ID. Either
-side may be absent. A changed key can move the member to another address;
-the comparison can pair both versions when it encounters them.
+The collecting `differences` result pairs observed versions by member ID in
+`Difference { ours, theirs }`. Either side may be absent. A changed key can
+move a member to another address; the collecting comparison pairs both
+versions when it encounters them.
 
 The tree has no general index from member ID to every address. A member
 reported only on the other side can still have a local version in a span the
@@ -76,8 +112,10 @@ control, response budgets and timeouts belong to the getter or its caller.
 Views are live. Concurrent changes can prevent a comparison from observing a
 settled pair of sets; seeing one member at multiple addresses can return
 `ComparisonError::Unsettled`. The caller decides how to retry and how to use
-the observations. Comparison neither applies changes nor establishes that
-both participants will remain equal afterward.
+the observations. Node uses [captured versions](storage.md#captured-versions-survive-short-reads)
+so one network comparison does not mix tree generations. The generic
+comparison neither applies changes nor establishes that both participants
+will remain equal afterward.
 
 ## Two digest groups
 
@@ -95,7 +133,7 @@ These are element sizes, not complete page or span-digest sizes. Counts,
 bounds and encoding metadata add to the representation. Persisted records
 identify the group; an encoding from one group cannot be read as the other.
 
-The [digest module documentation](https://github.com/ankurah/ankurah/blob/d635ea5358396a2812526175f30471266ab7d8bb/digest-tree/src/digest/mod.rs)
+The [digest module documentation](https://github.com/ankurah/ankurah/blob/bf40c3832149a18d7eb569cc800a0e61d2e88fd8/digest-tree/src/digest/mod.rs)
 states the construction and its assumptions. The
-[LtHash16 documentation](https://github.com/ankurah/ankurah/blob/d635ea5358396a2812526175f30471266ab7d8bb/digest-tree/src/digest/lthash16.rs)
+[LtHash16 documentation](https://github.com/ankurah/ankurah/blob/bf40c3832149a18d7eb569cc800a0e61d2e88fd8/digest-tree/src/digest/lthash16.rs)
 explains the limitations of that alternative.

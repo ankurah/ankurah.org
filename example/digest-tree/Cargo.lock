@@ -32,7 +32,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "ankql"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=d635ea5358396a2812526175f30471266ab7d8bb#d635ea5358396a2812526175f30471266ab7d8bb"
+source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
 dependencies = [
  "ankurah-core-types",
  "pest",
@@ -45,7 +45,7 @@ dependencies = [
 [[package]]
 name = "ankurah"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=d635ea5358396a2812526175f30471266ab7d8bb#d635ea5358396a2812526175f30471266ab7d8bb"
+source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -58,9 +58,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ankurah-connector-local-process"
+version = "0.10.0"
+source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
+dependencies = [
+ "ankurah-core",
+ "ankurah-proto",
+ "anyhow",
+ "async-trait",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "ankurah-core"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=d635ea5358396a2812526175f30471266ab7d8bb#d635ea5358396a2812526175f30471266ab7d8bb"
+source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
 dependencies = [
  "ankql",
  "ankurah-core-types",
@@ -97,7 +110,7 @@ dependencies = [
 [[package]]
 name = "ankurah-core-types"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=d635ea5358396a2812526175f30471266ab7d8bb#d635ea5358396a2812526175f30471266ab7d8bb"
+source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
 dependencies = [
  "anyhow",
  "base64",
@@ -112,7 +125,7 @@ dependencies = [
 [[package]]
 name = "ankurah-derive"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=d635ea5358396a2812526175f30471266ab7d8bb#d635ea5358396a2812526175f30471266ab7d8bb"
+source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
 dependencies = [
  "ankql",
  "ankurah-core-types",
@@ -129,7 +142,7 @@ dependencies = [
 [[package]]
 name = "ankurah-digest-tree"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=d635ea5358396a2812526175f30471266ab7d8bb#d635ea5358396a2812526175f30471266ab7d8bb"
+source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
 dependencies = [
  "ankurah-core-types",
  "blake3",
@@ -145,7 +158,7 @@ dependencies = [
 [[package]]
 name = "ankurah-proto"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=d635ea5358396a2812526175f30471266ab7d8bb#d635ea5358396a2812526175f30471266ab7d8bb"
+source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
 dependencies = [
  "ankql",
  "ankurah-core-types",
@@ -168,7 +181,7 @@ dependencies = [
 [[package]]
 name = "ankurah-signals"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=d635ea5358396a2812526175f30471266ab7d8bb#d635ea5358396a2812526175f30471266ab7d8bb"
+source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
 dependencies = [
  "reactive_graph",
  "tokio",
@@ -178,7 +191,7 @@ dependencies = [
 [[package]]
 name = "ankurah-storage-common"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=d635ea5358396a2812526175f30471266ab7d8bb#d635ea5358396a2812526175f30471266ab7d8bb"
+source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -195,7 +208,7 @@ dependencies = [
 [[package]]
 name = "ankurah-storage-sqlite"
 version = "0.10.0"
-source = "git+https://github.com/ankurah/ankurah?rev=d635ea5358396a2812526175f30471266ab7d8bb#d635ea5358396a2812526175f30471266ab7d8bb"
+source = "git+https://github.com/ankurah/ankurah?rev=bf40c3832149a18d7eb569cc800a0e61d2e88fd8#bf40c3832149a18d7eb569cc800a0e61d2e88fd8"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -501,6 +514,7 @@ name = "digest-tree-examples"
 version = "0.0.0"
 dependencies = [
  "ankurah",
+ "ankurah-connector-local-process",
  "ankurah-core-types",
  "ankurah-digest-tree",
  "ankurah-storage-sqlite",
@@ -904,6 +918,17 @@ name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
+
+[[package]]
+name = "mio"
+version = "1.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20521a903f02b0a573cd6840e9d0a5a0cc043d361fe924092cd70f8556cc9c4a"
+dependencies = [
+ "libc",
+ "wasi",
+ "windows-sys",
+]
 
 [[package]]
 name = "num-traits"
@@ -1405,6 +1430,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
 
 [[package]]
+name = "signal-hook-registry"
+version = "1.4.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4db69cba1110affc0e9f7bcd48bbf87b3f4fc7c61fc9155afd4c469eb3d6c1b"
+dependencies = [
+ "errno",
+ "libc",
+]
+
+[[package]]
 name = "slab"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1433,6 +1468,16 @@ name = "smallvec"
 version = "1.16.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3244542535d5de959d90ec55d1b5ff0fd2bb7b1310223907d5f11932847f7b59"
+
+[[package]]
+name = "socket2"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3d1e2c7f27f8d4cb10542a02c49005dbd6e93095799d6f3be745fae9f8fedd4"
+dependencies = [
+ "libc",
+ "windows-sys",
+]
 
 [[package]]
 name = "stacker"
@@ -1555,9 +1600,15 @@ version = "1.54.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b52fd3255258d26fac7264ab5a76b53c13367136dc011d3d6ad4f8ed070396a3"
 dependencies = [
+ "bytes",
+ "libc",
+ "mio",
  "parking_lot",
  "pin-project-lite",
+ "signal-hook-registry",
+ "socket2",
  "tokio-macros",
+ "windows-sys",
 ]
 
 [[package]]

@@ -25,8 +25,10 @@ where reconciliation must resume.
 existing `DigestTreeView`. There is no separate core view wrapper.
 
 Selections with different limits get separate lookups and different
-membership. A limited tree contains the engine's query result, including
-refill candidates when previous members leave. An unlimited tree contains
+membership. A limited tree contains exactly the selected prefix; incremental
+maintenance checks changed IDs and refills only a missing suffix at the same
+canonical snapshot. The tree supplies the order, so there is no second
+permanent sorted result. An unlimited tree contains
 all matches without requiring a separate permanent result set of those
 entities. Sharing trees across compatible Selections remains future work.
 
