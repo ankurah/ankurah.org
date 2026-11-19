@@ -56,6 +56,9 @@ required head in that capture has been covered by locally persisted history.
 A local descendant already covers its ancestor; concurrent versions need
 their missing events reconciled.
 
+Storage transaction commit is the boundary for this status. Power-loss
+durability follows the selected storage engine and its configuration.
+
 The source may have changed after capturing that target. The receiver can
 also retain extra entities or newer local edits. **Caught up describes the
 completed capture, not permanent equality between the Nodes.**

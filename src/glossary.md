@@ -212,8 +212,8 @@ the interest active; accepted history remains after the last handle is dropped.
 ### CaughtUp
 
 The `ReplicationState` reporting that a completed source capture is covered
-by durably stored event history. It permits extra local entities and newer
-descendants, and does not cover later source changes. See
+by event history committed through the local StorageEngine. It permits extra
+local entities and newer descendants, and does not cover later source changes. See
 [Durable Replication](digest-tree/durable-replication.md#caught-up-to-which-version).
 
 ## Operations
