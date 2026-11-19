@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Keys and views · Digest trees</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Same members, a different order</p>
+      <h1>Where does each album belong?</h1>
+      <p class="intro">
+        The key orders years. The ID breaks ties. The highlighted interval
+        selects members without removing anything from the tree.
+      </p>
+      <div class="controls key-controls">
+        <label
+          >Year key<select id="direction">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select></label
+        ><label
+          >Unknown years<select id="nulls">
+            <option value="last">Last</option>
+            <option value="first">First</option>
+          </select></label
+        ><label
+          >From<select id="from">
+            <option>2001</option>
+            <option>2008</option>
+            <option selected>2010</option>
+            <option>2013</option>
+            <option>2016</option>
+            <option>2020</option>
+          </select></label
+        ><label
+          >Through<select id="to">
+            <option>2001</option>
+            <option>2008</option>
+            <option>2010</option>
+            <option>2013</option>
+            <option selected>2016</option>
+            <option>2020</option>
+          </select></label
+        >
+      </div>
+      <div class="controls">
+        <label class="check"
+          ><input id="include-end" type="checkbox" checked />Include upper
+          year</label
+        ><label class="check"
+          ><input id="all" type="checkbox" />View the whole tree</label
+        >
+      </div>
+      <div class="scene">
+        <div class="key-labels">
+          <span>YEAR</span><span>PAYLOAD · ALBUM TITLE</span><span>ID</span>
+        </div>
+        <div
+          id="key-list"
+          class="key-list"
+          role="list"
+          aria-label="Albums in encoded key order"
+        ></div>
+      </div>
+      <div
+        id="caption"
+        class="caption"
+        aria-live="polite"
+        aria-atomic="true"
+      ></div>
+      <p class="note">
+        Positions illustrate the ordering rules, not the binary key encoding.
+        IDs 02 and 03 tie at 2013 and remain in ascending ID order with either
+        year direction. A range scan reversed over one fixed tree would reverse
+        those ties too.
+      </p>
+      <noscript
+        ><p>
+          The example contains eight members. In ascending year order, the
+          inclusive interval 2010–2016 selects IDs 08, 02, 03 and 04. Missing
+          years sort at the chosen end but are excluded by the numeric interval.
+        </p></noscript
+      >
+    </main>
+    <script type="module" src="keys.mjs"></script>
+  </body>
+</html>

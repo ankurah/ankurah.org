@@ -2,6 +2,37 @@
 
 This repository contains the source code for the [Ankurah](https://ankurah.org) documentation website.
 
+## 0.10 preview branch
+
+`docs/0.10` prepares documentation for the unreleased 0.10 version. The Entity
+Lifecycle chapter covers the current StorageEngine branch. Node startup,
+identity and reset use the 0.10 preview APIs. Model, query and React application
+examples remain on 0.9 until their separate migration. This branch does not
+change the published website.
+
+The [Digest Trees](src/digest-tree/index.md) section covers the foundation,
+Node-owned maintenance, query synchronization and durable replication on `feat/remove-system-after-node-keys` at
+`d2a2690786072dd208d197f975ad69de3bcab759`. That checkpoint is an unmerged,
+unreleased preview, not the API on `main` or crates.io. Fetch and live-query
+initialization/reconnect compare captured digests and repair differences
+through the existing peer update channel. Durable replication independently
+configures each direction and retains accepted event histories. The pages and interactive
+figures are authored in this repository, outside the generated
+`src/internals/` directory. See [the executable examples](example/digest-tree/README.md)
+for Liaison, trace regeneration and validation commands. The
+[Node Identity and Reset](src/guides/node-lifecycle.md) chapter explains stored
+keys, per-incarnation epochs and the terminal reset boundary. Primary startup
+snippets come from the isolated [native/WASM sample](example/startup/README.md),
+so they can follow 0.10 independently of the older application workspace.
+Run `./scripts/check-preview.sh` to validate the preview code, figure tests and
+recorded trace. CI runs it alongside the existing application checks; publishing
+remains restricted to `main`.
+
+The lifecycle chapter and its diagram source live in the ankurah repository's
+`docs/internals/` directory. Keep the website copies in sync when revising them.
+For a documentation-only local preview, run `mdbook serve --hostname 127.0.0.1`
+and open `/internals/entity-lifecycle.html`.
+
 ## Structure
 
 - `index.html` - Custom landing page

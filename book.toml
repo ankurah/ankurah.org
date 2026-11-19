@@ -1,5 +1,5 @@
 [book]
-title = "Ankurah"
+title = "Ankurah 0.10 preview"
 description = "A distributed state-management framework that enables real-time data synchronization across multiple nodes with built-in observability."
 authors = ["Ankurah Contributors"]
 language = "en"
@@ -12,9 +12,10 @@ build-dir = "book"
 default-theme = "light"
 preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/ankurah/ankurah"
-edit-url-template = "https://github.com/ankurah/ankurah.org/edit/main/{path}"
+edit-url-template = "https://github.com/ankurah/ankurah.org/edit/docs/0.10/{path}"
 site-url = "/"
-additional-js = ["mermaid.min.js", "mermaid-init.js"]
+additional-js = ["mermaid.min.js", "mermaid-init.js", "src/digest-tree/embeds.js"]
+additional-css = ["src/digest-tree/book.css"]
 
 [output.html.search]
 enable = true

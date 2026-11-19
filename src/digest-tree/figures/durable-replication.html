@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Choose each direction · Durable replication</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .directions { display: grid; gap: 8px; margin-bottom: 18px; }
+      .direction { border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; background: var(--read); }
+      .direction strong { display: block; font-size: 14px; }
+      .direction span { font-size: 12px; color: var(--muted); }
+      .records { padding: 0; margin: 0; list-style: none; }
+      .records li { padding: 10px 0; border-top: 1px solid var(--line); }
+      .records strong, .records span { display: block; font-size: 13px; }
+      .records span { color: var(--muted); font-size: 12px; margin-top: 4px; }
+      .records .retained strong { color: var(--accent); }
+      .capture { padding: 12px 14px; margin-top: 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--soft); }
+      .capture strong { display: block; font-size: 13px; }
+      .capture span { color: var(--muted); font-size: 12px; }
+      @media (max-width: 500px) {
+        .controls { display: grid; grid-template-columns: 1fr; }
+        .controls select { width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Durable replication · illustrative sequence</p>
+      <h1>Choose each direction independently.</h1>
+      <p class="intro">
+        Right can receive Left's published albums without sending anything back.
+        Add a reverse interest, or give it another Selection. Follow the histories
+        that stay stored when an album later leaves the selected set.
+      </p>
+      <div class="controls">
+        <label>Interests
+          <select id="directions">
+            <option value="one">One direction</option>
+            <option value="same">Both directions, same Selection</option>
+            <option value="different">Both directions, different Selections</option>
+          </select>
+        </label>
+        <label>Follow
+          <select id="scenario">
+            <option value="bootstrap">First synchronization</option>
+            <option value="exit">An album leaves the Selection</option>
+          </select>
+        </label>
+      </div>
+      <div class="scene">
+        <div class="directions" aria-label="Configured directional interests">
+          <div class="direction"><strong>Left → Right</strong><span>Right holds the handle · published = true</span></div>
+          <div id="reverse" class="direction" hidden><strong>Right → Left</strong><span id="reverse-selection"></span></div>
+        </div>
+        <div class="ledger">
+          <section class="ledger-card"><h2>Histories stored on Left</h2><ul id="left-records" class="records"></ul></section>
+          <section class="ledger-card"><h2>Histories stored on Right</h2><ul id="right-records" class="records"></ul></section>
+        </div>
+        <div class="capture"><strong id="state">Connecting</strong><span id="coverage">No completed source capture yet.</span></div>
+      </div>
+      <div class="playback" role="group" aria-label="Durable replication playback" transclude="fragments.html#playback-controls">
+
+        <button id="play" class="primary" aria-pressed="false">Play</button>
+        <button id="previous" aria-label="Previous step">←</button>
+        <button id="next" aria-label="Next step">→</button>
+        <input
+          id="progress"
+          type="range"
+          min="0"
+          max="4"
+          value="0"
+          aria-label="Explanation step"
+        />
+        <span id="step" class="step-label">0 / 4</span>
+      </div>
+      <div id="caption" class="caption" aria-live="polite" aria-atomic="true">
+        <strong>Each receiver owns its interest.</strong>
+        <p>A connection by itself does not choose the data to replicate.</p>
+      </div>
+      <p class="note">
+        This is a conceptual sequence, not recorded traffic. Both directions
+        capture independently; the status follows Left → Right. All reads,
+        event transfers and application remain subject to policy and finite limits.
+      </p>
+      <details class="response">
+        <summary>Read without playback</summary>
+        <p>
+          Each receiver configures its own Selection and credentials. Digest
+          comparison finds missing history; a new durable entity needs its
+          supporting events, while a known head can receive a connecting bridge.
+          Local commits finish without waiting for peer delivery.
+        </p>
+        <p>
+          CaughtUp covers one source capture. It allows newer local versions and
+          extra retained entities, and it says nothing about later source writes.
+          When Aurora becomes unpublished, its exit event removes it from the published
+          result while both participants retain its accepted history. Dropping an
+          interest also retains accepted history.
+        </p>
+      </details>
+    </main>
+    <script type="module" src="durable-replication.mjs"></script>
+  </body>
+</html>

@@ -1,5 +1,10 @@
 # What is Ankurah?
 
+> **0.10 documentation preview.** Start with the updated
+> [Entity Lifecycle](internals/entity-lifecycle.md) chapter for Views, Mutables,
+> primary entities, and transaction entities. Other chapters still describe 0.9
+> unless marked otherwise.
+
 Ankurah is a state-management framework for synchronizing data between
 connected nodes with built-in observability.
 

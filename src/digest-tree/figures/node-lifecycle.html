@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Maintain, flush, recover · Digest trees</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .lifecycle-ledger {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .lifecycle-ledger .version {
+        font-size: clamp(19px, 3vw, 25px);
+      }
+      @media (max-width: 650px) {
+        .lifecycle-ledger {
+          grid-template-columns: 1fr;
+        }
+        .lifecycle-ledger .version {
+          margin: 8px 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Node-owned trees · illustrative sequence</p>
+      <h1>Durable state can lead its derived tree.</h1>
+      <p class="intro">
+        Follow one maintained tree from state A to state B. Compare an ordinary
+        write-behind flush with restarting before that flush. Canonical entity
+        state remains the recovery source in both paths.
+      </p>
+      <div class="controls">
+        <label
+          >After maintenance
+          <select id="outcome">
+            <option value="flush">Flush the pending tree</option>
+            <option value="restart">Restart before the flush</option>
+          </select>
+        </label>
+      </div>
+      <div class="scene">
+        <div class="ledger lifecycle-ledger">
+          <section class="ledger-card">
+            <h2>Canonical entity state</h2>
+            <div id="canonical" class="version">A</div>
+            <p>Durable independently of tree maintenance.</p>
+          </section>
+          <section class="ledger-card">
+            <h2>Maintained tree reads</h2>
+            <div id="view" class="version">A</div>
+            <p>Only a validated version can answer a read.</p>
+          </section>
+          <section class="ledger-card">
+            <h2>Durable tree + cursor</h2>
+            <div id="durable" class="version">A · C0</div>
+            <p>
+              Records, member lookup, generation log and cursor commit together.
+            </p>
+          </section>
+        </div>
+        <div id="working" class="cache-status">No private candidate.</div>
+      </div>
+      <div
+        class="playback"
+        role="group"
+        aria-label="Maintenance playback"
+        transclude="fragments.html#playback-controls"
+      >
+
+          <button id="play" class="primary" aria-pressed="false">Play</button>
+          <button id="previous" aria-label="Previous step">←</button>
+          <button id="next" aria-label="Next step">→</button>
+          <input
+            id="progress"
+            type="range"
+            min="0"
+            max="4"
+            value="0"
+            aria-label="Explanation step"
+          />
+          <span id="step" class="step-label">0 / 4</span>
+        </div>
+      <div id="caption" class="caption" aria-live="polite" aria-atomic="true">
+        <strong>Start from a caught-up tree.</strong>
+        <p>The canonical state and the durable tree both describe A.</p>
+      </div>
+      <p class="note">
+        This is a conceptual sequence, not a recorded execution or a timer. A
+        and B name complete states; C0 and C1 label opaque storage cursors, not
+        event numbers or comparable counters. The example follows a small
+        incremental batch with deferred persistence. By default, pending changes
+        flush at 1,024 changed entities or after 250 ms; an explicit
+        <code>flush_trees()</code> also catches up and persists maintained
+        trees.
+      </p>
+      <details class="response">
+        <summary>Read the sequence without playback</summary>
+        <p>
+          Before polling a canonical commit, Node invalidates maintained reads
+          and wakes its worker. After the commit, the worker reconciles a
+          private candidate from canonical state, validates its source boundary,
+          and publishes the complete version. Persistence may follow later in
+          one atomic tree transaction. If the process stops first, the next Node
+          opens the durable tree and reconciles from its saved cursor. A missing
+          or invalid recovery boundary requires a full reconstruction.
+        </p>
+        <p>
+          Reconciliation uses the latest visible canonical states, including
+          adopted snapshots. Limited selections check changed IDs and
+          refill only a missing suffix at the same source boundary. A failed source validation publishes no
+          partial candidate and can be retried. This figure assumes validation
+          and the eventual tree flush succeed.
+        </p>
+      </details>
+    </main>
+    <script type="module" src="node-lifecycle.mjs"></script>
+  </body>
+</html>

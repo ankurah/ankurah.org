@@ -1,0 +1,23 @@
+[package]
+name = "ankurah-startup-examples"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Use the same unreleased preview as the executable digest-tree examples.
+[dependencies]
+ankurah = { git = "https://github.com/ankurah/ankurah", rev = "d2a2690786072dd208d197f975ad69de3bcab759" }
+anyhow = "1"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+ankurah-storage-sled = { git = "https://github.com/ankurah/ankurah", rev = "d2a2690786072dd208d197f975ad69de3bcab759" }
+ankurah-websocket-server = { git = "https://github.com/ankurah/ankurah", rev = "d2a2690786072dd208d197f975ad69de3bcab759" }
+ankurah-websocket-client = { git = "https://github.com/ankurah/ankurah", rev = "d2a2690786072dd208d197f975ad69de3bcab759" }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+ankurah = { git = "https://github.com/ankurah/ankurah", rev = "d2a2690786072dd208d197f975ad69de3bcab759", features = ["wasm"] }
+ankurah-storage-indexeddb-wasm = { git = "https://github.com/ankurah/ankurah", rev = "d2a2690786072dd208d197f975ad69de3bcab759" }
+ankurah-websocket-client-wasm = { git = "https://github.com/ankurah/ankurah", rev = "d2a2690786072dd208d197f975ad69de3bcab759" }
+
+[workspace]

@@ -1,0 +1,427 @@
+{
+  "cases": [
+    {
+      "differences": [],
+      "id": "equal",
+      "ours": 256,
+      "rounds": [
+        {
+          "answers": [
+            {
+              "kind": "digests",
+              "parts": [
+                {
+                  "count": 0,
+                  "equal": true,
+                  "range": {
+                    "first": null,
+                    "last": null
+                  }
+                },
+                {
+                  "count": 247,
+                  "equal": true,
+                  "range": {
+                    "first": 1,
+                    "last": 247
+                  }
+                },
+                {
+                  "count": 9,
+                  "equal": true,
+                  "range": {
+                    "first": 248,
+                    "last": 256
+                  }
+                },
+                {
+                  "count": 0,
+                  "equal": true,
+                  "range": {
+                    "first": null,
+                    "last": null
+                  }
+                }
+              ],
+              "range": {
+                "first": 1,
+                "last": 256
+              }
+            }
+          ],
+          "requests": 1
+        }
+      ],
+      "theirs": 256
+    },
+    {
+      "differences": [
+        {
+          "id": 257,
+          "ours": null,
+          "theirs": "Album 257"
+        }
+      ],
+      "id": "added",
+      "ours": 256,
+      "rounds": [
+        {
+          "answers": [
+            {
+              "kind": "digests",
+              "parts": [
+                {
+                  "count": 0,
+                  "equal": true,
+                  "range": {
+                    "first": null,
+                    "last": null
+                  }
+                },
+                {
+                  "count": 247,
+                  "equal": true,
+                  "range": {
+                    "first": 1,
+                    "last": 247
+                  }
+                },
+                {
+                  "count": 10,
+                  "equal": false,
+                  "range": {
+                    "first": 248,
+                    "last": 257
+                  }
+                },
+                {
+                  "count": 0,
+                  "equal": true,
+                  "range": {
+                    "first": null,
+                    "last": null
+                  }
+                }
+              ],
+              "range": {
+                "first": 1,
+                "last": 257
+              }
+            }
+          ],
+          "requests": 1
+        },
+        {
+          "answers": [
+            {
+              "kind": "members",
+              "members": 10,
+              "range": {
+                "first": 248,
+                "last": 257
+              }
+            }
+          ],
+          "requests": 1
+        }
+      ],
+      "theirs": 257
+    },
+    {
+      "differences": [
+        {
+          "id": 150,
+          "ours": "Album 150",
+          "theirs": "Album 150 (Live)"
+        }
+      ],
+      "id": "changed",
+      "ours": 256,
+      "rounds": [
+        {
+          "answers": [
+            {
+              "kind": "digests",
+              "parts": [
+                {
+                  "count": 0,
+                  "equal": true,
+                  "range": {
+                    "first": null,
+                    "last": null
+                  }
+                },
+                {
+                  "count": 247,
+                  "equal": false,
+                  "range": {
+                    "first": 1,
+                    "last": 247
+                  }
+                },
+                {
+                  "count": 9,
+                  "equal": true,
+                  "range": {
+                    "first": 248,
+                    "last": 256
+                  }
+                },
+                {
+                  "count": 0,
+                  "equal": true,
+                  "range": {
+                    "first": null,
+                    "last": null
+                  }
+                }
+              ],
+              "range": {
+                "first": 1,
+                "last": 256
+              }
+            }
+          ],
+          "requests": 1
+        },
+        {
+          "answers": [
+            {
+              "kind": "digests",
+              "parts": [
+                {
+                  "count": 0,
+                  "equal": true,
+                  "range": {
+                    "first": null,
+                    "last": null
+                  }
+                },
+                {
+                  "count": 119,
+                  "equal": true,
+                  "range": {
+                    "first": 1,
+                    "last": 119
+                  }
+                },
+                {
+                  "count": 128,
+                  "equal": false,
+                  "range": {
+                    "first": 120,
+                    "last": 247
+                  }
+                }
+              ],
+              "range": {
+                "first": 1,
+                "last": 247
+              }
+            }
+          ],
+          "requests": 1
+        },
+        {
+          "answers": [
+            {
+              "kind": "digests",
+              "parts": [
+                {
+                  "count": 64,
+                  "equal": false,
+                  "range": {
+                    "first": 120,
+                    "last": 183
+                  }
+                },
+                {
+                  "count": 64,
+                  "equal": true,
+                  "range": {
+                    "first": 184,
+                    "last": 247
+                  }
+                }
+              ],
+              "range": {
+                "first": 120,
+                "last": 247
+              }
+            }
+          ],
+          "requests": 1
+        },
+        {
+          "answers": [
+            {
+              "kind": "members",
+              "members": 64,
+              "range": {
+                "first": 120,
+                "last": 183
+              }
+            }
+          ],
+          "requests": 1
+        }
+      ],
+      "theirs": 256
+    },
+    {
+      "differences": [
+        {
+          "id": 150,
+          "ours": "Album 150",
+          "theirs": "Album 150 (Live)"
+        },
+        {
+          "id": 257,
+          "ours": null,
+          "theirs": "Album 257"
+        }
+      ],
+      "id": "both",
+      "ours": 256,
+      "rounds": [
+        {
+          "answers": [
+            {
+              "kind": "digests",
+              "parts": [
+                {
+                  "count": 0,
+                  "equal": true,
+                  "range": {
+                    "first": null,
+                    "last": null
+                  }
+                },
+                {
+                  "count": 247,
+                  "equal": false,
+                  "range": {
+                    "first": 1,
+                    "last": 247
+                  }
+                },
+                {
+                  "count": 10,
+                  "equal": false,
+                  "range": {
+                    "first": 248,
+                    "last": 257
+                  }
+                },
+                {
+                  "count": 0,
+                  "equal": true,
+                  "range": {
+                    "first": null,
+                    "last": null
+                  }
+                }
+              ],
+              "range": {
+                "first": 1,
+                "last": 257
+              }
+            }
+          ],
+          "requests": 1
+        },
+        {
+          "answers": [
+            {
+              "kind": "digests",
+              "parts": [
+                {
+                  "count": 0,
+                  "equal": true,
+                  "range": {
+                    "first": null,
+                    "last": null
+                  }
+                },
+                {
+                  "count": 119,
+                  "equal": true,
+                  "range": {
+                    "first": 1,
+                    "last": 119
+                  }
+                },
+                {
+                  "count": 128,
+                  "equal": false,
+                  "range": {
+                    "first": 120,
+                    "last": 247
+                  }
+                }
+              ],
+              "range": {
+                "first": 1,
+                "last": 247
+              }
+            },
+            {
+              "kind": "members",
+              "members": 10,
+              "range": {
+                "first": 248,
+                "last": 257
+              }
+            }
+          ],
+          "requests": 2
+        },
+        {
+          "answers": [
+            {
+              "kind": "digests",
+              "parts": [
+                {
+                  "count": 64,
+                  "equal": false,
+                  "range": {
+                    "first": 120,
+                    "last": 183
+                  }
+                },
+                {
+                  "count": 64,
+                  "equal": true,
+                  "range": {
+                    "first": 184,
+                    "last": 247
+                  }
+                }
+              ],
+              "range": {
+                "first": 120,
+                "last": 247
+              }
+            }
+          ],
+          "requests": 1
+        },
+        {
+          "answers": [
+            {
+              "kind": "members",
+              "members": 64,
+              "range": {
+                "first": 120,
+                "last": 183
+              }
+            }
+          ],
+          "requests": 1
+        }
+      ],
+      "theirs": 257
+    }
+  ],
+  "source": "d2a2690786072dd208d197f975ad69de3bcab759"
+}

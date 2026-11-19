@@ -1,5 +1,9 @@
 # Defining Models
 
+> For the pending 0.10 changes, see
+> [Views, Mutables, and Entities](internals/entity-lifecycle.md#views-mutables-and-entities),
+> including what a transaction View reads after commit or rollback.
+
 Models define the structure of your entities. Define them once in Rust, and they work everywhere—native servers, browser clients, and mobile apps.
 
 ## Basic Model Definition

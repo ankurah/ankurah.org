@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Compare, repair, cover · Digest trees</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .stages {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 7px;
+        list-style: none;
+        padding: 0;
+        margin: 0 0 18px;
+      }
+      .stages li {
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .stages li[aria-current="step"] {
+        border-color: var(--teal);
+        color: var(--teal);
+        background: var(--good);
+        font-weight: 650;
+      }
+      .sync-ledger .version {
+        font-size: 20px;
+        line-height: 1.35;
+        margin: 10px 0;
+      }
+      .spans {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 15px;
+      }
+      .span {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--soft);
+        padding: 12px;
+      }
+      .span strong, .span span {
+        display: block;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .span span {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 5px;
+      }
+      .span.equal, .span.covered {
+        border-color: var(--teal);
+        background: var(--good);
+      }
+      .span.different {
+        border-color: var(--accent);
+        background: var(--warm);
+      }
+      .span.repair {
+        border-color: var(--blue);
+        background: var(--read);
+      }
+      .channel {
+        margin-top: 15px;
+        padding-top: 13px;
+        border-top: 1px solid var(--line);
+      }
+      .channel strong {
+        font-size: 12px;
+      }
+      .channel p {
+        margin: 5px 0 0;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      @media (max-width: 500px) {
+        .controls { display: grid; grid-template-columns: 1fr; }
+        .controls select { width: 100%; }
+        .stages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .spans { grid-template-columns: 1fr; }
+        .span { display: flex; justify-content: space-between; gap: 12px; }
+        .span span { margin-top: 0; text-align: right; }
+        .sync-ledger .version { margin: 6px 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Query synchronization · illustrative sequence</p>
+      <h1>Compare summaries. Repair what is missing.</h1>
+      <p class="intro">
+        A requester describes what it knows. Its peer captures an authorized
+        query result. Follow how the requester covers that target without
+        sending a complete inventory first.
+      </p>
+      <div class="controls">
+        <label>Starting point
+          <select id="scenario">
+            <option value="sparse">A few differences</option>
+            <option value="equal">Matching digests</option>
+            <option value="cold">No known query members</option>
+            <option value="retry">Capture lost during repair</option>
+          </select>
+        </label>
+        <label>Request
+          <select id="request">
+            <option value="fetch">Fetch</option>
+            <option value="live">Live query / reconnect</option>
+          </select>
+        </label>
+      </div>
+      <div class="scene">
+        <ol class="stages" aria-label="Comparison stages">
+          <li data-stage="capture" aria-current="step">1 · Capture</li>
+          <li data-stage="compare">2 · Compare</li>
+          <li data-stage="repair">3 · Repair</li>
+          <li data-stage="cover">4 · Cover target</li>
+        </ol>
+        <div class="ledger sync-ledger">
+          <section class="ledger-card">
+            <h2>Requester</h2>
+            <div id="local" class="version">Known query members</div>
+            <p id="local-detail">Local canonical state remains the source of entity heads.</p>
+          </section>
+          <section class="ledger-card">
+            <h2>Peer</h2>
+            <div id="remote" class="version">Prepare a target</div>
+            <p id="remote-detail">A capture holds one authorized tree version for this comparison.</p>
+          </section>
+        </div>
+        <div class="spans" aria-label="Illustrative spans of the target">
+          <div class="span"><strong>Early albums</strong><span>Not compared</span></div>
+          <div class="span"><strong>Middle albums</strong><span>Not compared</span></div>
+          <div class="span"><strong>Recent albums</strong><span>Not compared</span></div>
+        </div>
+        <div class="channel">
+          <strong>Existing peer update channel</strong>
+          <p id="delivery">No entity repair delivered yet.</p>
+        </div>
+        <div id="standing" class="cache-status" hidden></div>
+      </div>
+      <div class="playback" role="group" aria-label="Query comparison playback"
+        transclude="fragments.html#playback-controls">
+
+          <button id="play" class="primary" aria-pressed="false">Play</button>
+          <button id="previous" aria-label="Previous step">←</button>
+          <button id="next" aria-label="Next step">→</button>
+          <input
+            id="progress"
+            type="range"
+            min="0"
+            max="4"
+            value="0"
+            aria-label="Explanation step"
+          />
+          <span id="step" class="step-label">0 / 4</span>
+        </div>
+      <div id="caption" class="caption" aria-live="polite" aria-atomic="true">
+        <strong>Begin with the Selection and known digest.</strong>
+        <p>The peers also agree on the key specification used to order the members.</p>
+      </div>
+      <p class="note">
+        This is a conceptual sequence, not a recorded execution or a network
+        measurement. The three spans are illustrative; the tree determines
+        actual page bounds. A step can represent several bounded exchanges.
+        Every disclosure remains subject to current authorization and work limits.
+      </p>
+      <details class="response">
+        <summary>Read the sequence without playback</summary>
+        <p>
+          Matching digests finish comparison without requesting more pages or
+          entity repairs. Otherwise, pages expose smaller span summaries or
+          members; equal spans need no further descent. The requester reconciles
+          differing members against its canonical entity heads, then receives
+          bounded repairs over the peer's existing update channel. Query replies
+          carry comparison control rather than a second entity delivery stream.
+        </p>
+        <p>
+          Coverage means that each target member is present locally at its
+          captured head or a descendant. Concurrent heads need causal event
+          repair. Local-only members are checked by authorized identity reads
+          to learn about predicate exits; absence alone does not delete an
+          entity. A lost retained version requires a new comparison, preserving
+          repairs already applied and respecting the remaining work allowance.
+        </p>
+        <p>
+          For a live query, the peer installs its standing Reactor subscription
+          before capturing the target. Comparison handles initialization or
+          reconnect; Reactor continues to supply live changes.
+        </p>
+      </details>
+    </main>
+    <script type="module" src="query-sync.mjs"></script>
+  </body>
+</html>
